@@ -1,7 +1,7 @@
 Sistema de BI e Automação de Relatórios (Python)
 Sistema desenvolvido em Python para processamento de dados de Business Intelligence, gerando planilhas automatizadas e realizando o disparo de relatórios por e-mail.
 
-🚀 Tecnologias Utilizadas
+🚀 Tecnologias Utilizadas:
 Python
 Pandas (Manipulação e análise de dados)
 Smtplib / EmailMessage (Automação de envio de e-mails)
