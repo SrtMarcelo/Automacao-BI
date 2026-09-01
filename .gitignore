@@ -1,0 +1,10 @@
+# Arquivos de ambiente e senhas
+.env
+config.py
+
+# Planilhas geradas localmente
+*.xlsx
+
+# Configurações do sistema/editor
+.cache/
+.DS_Store
