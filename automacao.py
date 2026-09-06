@@ -44,11 +44,13 @@ Sistema Automático de BI - Jotta Store
 
     # Disparo via Servidor SMTP do Gmail com tratamento de exceção estruturado
     try:
+        
         print("🚀 Conectando ao servidor SMTP do Gmail...")
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(remetente, senha_app)
             smtp.send_message(msg)
         print("✅ E-mail disparado com sucesso!")
+
     except Exception as e:
         print(f"❌ Erro durante o envio do e-mail: {e}")
 
