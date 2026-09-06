@@ -1,10 +1,15 @@
-# Arquivos de ambiente e senhas
+# Ambientes e Configurações Sensíveis
 .env
 config.py
 
-# Planilhas geradas localmente
+# Arquivos de Dados Locais
 *.xlsx
 
-# Configurações do sistema/editor
+# Logs e Cache
+*.log
 .cache/
 .DS_Store
+
+# Dependências e Ambiente Virtual
+.venv/
+__pycache__/
