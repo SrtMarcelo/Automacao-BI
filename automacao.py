@@ -63,6 +63,5 @@ Sistema Automático de BI - Jotta Store
 
     except Exception as e:
         print(f"❌ Erro durante o envio do e-mail: {e}")
-
 if __name__ == "__main__":
     enviar_relatorio()
