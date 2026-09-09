@@ -1,10 +1,10 @@
-# 📊 Sistema de BI e Automação de Relatórios
+#  Sistema de BI e Automação de Relatórios
 
 Pipeline de dados desenvolvido em Python para automação de extração, tratamento e monitoramento de indicadores comerciais (KPIs). O sistema conecta-se a um banco de dados relacional para otimizar a tomada de decisões estratégicas.
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+##  Tecnologias Utilizadas
 * **Python** (Linguagem principal)
 * **Pandas** (Manipulação e análise de dados)
 * **MySQL** / MySQL Workbench (Banco de dados relacional)
@@ -13,14 +13,14 @@ Pipeline de dados desenvolvido em Python para automação de extração, tratame
 
 ---
 
-## ⚙️ Como Funciona
+##  Como Funciona
 1. **Extração de Dados:** O script se conecta de forma automatizada à fonte de dados para resgatar informações brutas de vendas e operações.
 2. **Processamento e Análise:** Limpa, filtra e estrutura as informações utilizando scripts em Python (`analise_dados.py` e `automacao.py`), gerando planilhas automatizadas em formato Excel.
 3. **Disparo Automático:** O sistema dispara o e-mail de forma programada com o anexo pronto para visualização gerencial (`disparo_automatico.py`).
 
 ---
 
-## 🚀 Como executar o projeto
+##  Como executar o projeto
 
 Se você quiser clonar e testar o código no seu ambiente local, siga os passos abaixo:
 
