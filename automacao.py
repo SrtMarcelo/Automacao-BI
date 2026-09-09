@@ -58,10 +58,10 @@ Sistema Automático de BI - Jotta Store
             smtp.login(remetente, senha_app)
             smtp.send_message(msg)
             
-            # 👇 A MENSAGEM ENTRA EXATAMENTE AQUI, LOGO APÓS O ENVIO BEM-SUCEDIDO
+            # 👇 A MENSAGEM ENTRA EXATAMENTE AQUI, LOGO APÓS O ENVIO BEM-SUCEDIDO.
             print("Relatório enviado com sucesso!")
 
     except Exception as e:
         print(f"❌ Erro durante o envio do e-mail: {e}")
 if __name__ == "__main__":
-    enviar_relatorio()
+    enviar_relatorio() 
