@@ -16,8 +16,8 @@ def enviar_relatorio():
     corpo_email = f"""
     Olá,
     
-    O relatório de BI foi gerado com sucesso conectando diretamente ao banco de dados online.
-    Total de registros processados: {len(df)}
+      O relatório de BI foi gerado com sucesso conectando diretamente ao banco de dados online.
+       Total de registros processados: {len(df)}
 
     Atenciosamente,
     Sistema Automático de BI - Jotta Store
