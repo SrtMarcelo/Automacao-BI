@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   bi-industrial-pipeline:
     build: .
@@ -8,8 +10,30 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./bi_staging.db:/app/bi_staging.db
+    depends_on:
+      - redis
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+
+  celery-worker:
+    build: .
+    container_name: sap_celery_worker
+    restart: unless-stopped
+    command: celery -A celery_worker.celery_app worker --loglevel=info -P solo
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./bi_staging.db:/app/bi_staging.db
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_broker
+    ports:
+      - "6379:6379"
+    restart: always

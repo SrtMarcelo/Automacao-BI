@@ -1,4 +1,5 @@
 from datetime import datetime
+from email.message import EmailMessage
 import logging
 from logging.handlers import RotatingFileHandler
 import os
@@ -7,6 +8,9 @@ import sys
 import time
 from dotenv import load_dotenv
 import pandas as pd
+from prometheus_client import Counter, Histogram, start_http_server
+pybreaker = __import__('pybreaker')
+from pydantic import BaseModel, Field, ValidationError
 import requests
 from sqlalchemy import Column, Float, MetaData, String, Table, create_engine
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
@@ -33,6 +37,34 @@ logger = logging.getLogger("SAP_BI_Pipeline")
 logger.setLevel(logging.INFO)
 logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
+
+# Configuração do Circuit Breaker corporativo (Abre após 3 falhas consecutivas, reseta em 60s)
+sap_breaker = pybreaker.CircuitBreaker(fail_max=3, reset_timeout=60)
+
+# ==========================================
+# MÉTRICAS PROMETHEUS (TELEMETRIA INDUSTRIAL)
+# ==========================================
+REGISTROS_PROCESSADOS = Counter(
+    "sap_pipeline_records_processed_total", 
+    "Total de registros processados com sucesso no pipeline"
+)
+FALHAS_PIPELINE = Counter(
+    "sap_pipeline_failures_total", 
+    "Total de falhas críticas ocorridas no pipeline"
+)
+LATENCIA_EXTRACAO = Histogram(
+    "sap_pipeline_extraction_duration_seconds", 
+    "Tempo de latência da extração de dados do SAP OData"
+)
+
+
+# Contrato de Dados (Data Contract) utilizando Pydantic para blindagem do payload SAP
+class IndicadorSapSchema(BaseModel):
+    Centro: str = Field(..., min_length=1, max_length=10)
+    Operacao: str = Field(..., min_length=1, max_length=50)
+    PesoLiquido: float = Field(..., ge=0.0)
+    Material: str = Field(..., min_length=1, max_length=100)
+    Status: str = Field(..., min_length=1, max_length=50)
 
 
 class SAPDataPipeline:
@@ -64,8 +96,10 @@ class SAPDataPipeline:
         )
         self.metadata.create_all(self.engine)
 
+    @sap_breaker
+    @LATENCIA_EXTRACAO.time()  # Métrica Prometheus:mede automaticamente o tempo de execução
     def extract_sap_data(self, max_tentativas=3, espera_inicial=5) -> pd.DataFrame:
-        """Extrai dados do SAP OData com política de Retry e Backoff Exponencial."""
+        """Extrai dados do SAP OData com política de Retry, Backoff e Circuit Breaker."""
         tentativa = 0
         while tentativa < max_tentativas:
             try:
@@ -112,18 +146,32 @@ class SAPDataPipeline:
                 time.sleep(tempo_espera)
 
     def load_to_staging(self, df: pd.DataFrame):
-        """Carrega os dados no banco local com transação atômica e idempotência (Upsert)."""
+        """Carrega os dados no banco local com validação estrita (Pydantic), transação atômica e idempotência."""
         if df.empty:
             logger.warning("DataFrame vazio. Nenhuma carga realizada no banco.")
             return
 
         records = df.to_dict(orient="records")
-        logger.info(f"Persistindo {len(records)} registros na tabela de Staging local...")
+        valid_records = []
+
+        # Validação rigida de cada registro utilizando o Contrato de Dados
+        for record in records:
+            try:
+                validated_data = IndicadorSapSchema(**record)
+                valid_records.append(validated_data.model_dump())
+            except ValidationError as ve:
+                logger.error(f"❌ Contrato de dados violado no registro {record}: {ve}")
+
+        if not valid_records:
+            logger.critical("Nenhum registro passou na validação do Pydantic. Abortando carga.")
+            raise ValueError("Falha no Contrato de Dados (Data Contract Validation).")
+
+        logger.info(f"Persistindo {len(valid_records)} registros validados na tabela de Staging local...")
 
         try:
             # Transação explícita: Commit automático em sucesso, Rollback automático em falha
             with self.engine.begin() as conn:
-                for record in records:
+                for record in valid_records:
                     stmt = sqlite_insert(self.staging_table).values(record)
                     stmt = stmt.on_conflict_do_update(
                         index_elements=["Centro", "Operacao"],
@@ -135,6 +183,9 @@ class SAPDataPipeline:
                         },
                     )
                     conn.execute(stmt)
+            
+            # Incrementa contador Prometheus de registros com sucesso
+            REGISTROS_PROCESSADOS.inc(len(valid_records))
             logger.info("Persistência em banco concluída com sucesso (Commit efetuado).")
         except Exception as e:
             logger.critical(f"❌ Erro crítico no banco. Transação revertida (Rollback): {e}", exc_info=True)
@@ -159,7 +210,7 @@ class SAPDataPipeline:
         msg["From"] = remetente
         msg["To"] = destinatario
         msg.set_content(
-            f"Pipeline executado com sucesso.\nTotal de registros processados: {len(df)}\nBanco Staging atualizado com idempotência e transação atômica."
+            f"Pipeline executado com sucesso.\nTotal de registros processados: {len(df)}\nBanco Staging atualizado com validação de contrato, idempotência e transação atômica."
         )
 
         try:
@@ -191,10 +242,15 @@ class SAPDataPipeline:
             self.generate_report_and_dispatch(df)
             logger.info("=== PIPELINE EXECUTADO COM ÊXITO ===\n")
         except Exception as e:
+            FALHAS_PIPELINE.inc()  # Incrementa métrica de erro no Prometheus
             logger.critical(f"Falha fatal no pipeline: {e}", exc_info=True)
             sys.exit(1)
 
 
 if __name__ == "__main__":
+    # Inicializa o servidor HTTP do Prometheus na porta 8000 em background
+    start_http_server(8000)
+    logger.info("Servidor de métricas Prometheus ativo em http://localhost:8000/metrics")
+
     pipeline = SAPDataPipeline()
     pipeline.run()
