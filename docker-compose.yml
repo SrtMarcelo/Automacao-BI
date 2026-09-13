@@ -1,0 +1,15 @@
+services:
+  bi-industrial-pipeline:
+    build: .
+    container_name: sap_bi_orquestrador
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./bi_staging.db:/app/bi_staging.db
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

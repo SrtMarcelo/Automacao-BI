@@ -1,51 +1,63 @@
-import pandas as pd
-from sqlalchemy import create_engine
-import smtplib
+import os
 from email.message import EmailMessage
-import schedule as agendar# <--- PRECISA INSTALAR: pip install schedule
-import time
+import smtplib
+from dotenv import load_dotenv
+import pandas as pd
+import requests
 
-#  Configuração do Banco
-url_conexao = "mysql+pymysql://root:JGwsTBYFWtLCVfBsOKJmZLzmTNexZjhF@yamanote.proxy.rlwy.net:12296/railway"
-engine = create_engine(url_conexao)
+load_dotenv()
 
-def enviar_relatorio_agendado():
-    try:
-        #  Gera o relatório
-        df = pd.read_sql("SELECT * FROM usuarios", engine)
-        df.to_excel("relatorio_automatico.xlsx", index=False)
 
-        # Configura o e-mail
-        msg = EmailMessage()
-        msg['Subject'] = '📊 Relatório Diário Automático -Jotta Store'
-        msg['From'] = 'mekanics153@gmail.com'
-        msg['To'] = 'mekanics153@gmail.com'
-        msg.set_content(f"Relatório gerado automaticamente pelo sistema.\nTotal de registros: {len(df)}")
+def enviar_relatorio_direto():
+  try:
+    print("📊 Consultando dados via API OData do SAP S/4HANA...")
 
-        with open("relatorio_automatico.xlsx", 'rb') as f:
-            msg.add_attachment(f.read(), maintype='application', subtype='xlsx', filename="relatorio_automatico.xlsx")
+    # Chamada segura utilizando variáveis de ambiente para usuário e senha
+    response = requests.get(
+        "https://seu-ambiente-sap/sap/opu/odata/...",
+        auth=(os.getenv("SAP_USER"), os.getenv("SAP_PASSWORD")),
+        timeout=30,
+    )
+    response.raise_for_status()  # Lança exceção se a API falhar
 
-        #  Envia
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login('mekanics153@gmail.com', 'rfvpmoeolsqelzjo')
-            smtp.send_message(msg)
+    df = pd.DataFrame(response.json()["d"]["results"])
+    df.to_excel("relatorio_automatico.xlsx", index=False)
 
-        print(f" Relatório enviado com sucesso! ✅")
-    except Exception as e:
-        print(f"❌ Erro no envio automático: {e}")
+    # Configuração do e-mail
+    remetente = os.getenv("EMAIL_USER")
+    destinatario = os.getenv("EMAIL_DESTINATARIO")
+    senha_app = os.getenv("EMAIL_PASSWORD")
 
-# O QUE MUDA PARA FICAR CORRETO 
+    msg = EmailMessage()
+    msg["Subject"] = (
+        "📊 Relatório Diário Automático - Indicadores Operacionais"
+    )
+    msg["From"] = remetente
+    msg["To"] = destinatario
+    msg.set_content(
+        f"Relatório gerado via integração SAP S/4HANA.\nTotal de registros:"
+        f" {len(df)}"
+    )
 
-# Agendar para as 08:30 (Atenção: Railway usa horário UTC!)
-# Se você quer 08:30 no Brasil, e o Railway estiver em UTC,
-#  Deve ajustar para o horário correspondente (ex: 11:30 UTC)
-# Muda-se apenas a linha abaixo para o horário de LONDRES (Brasília + 3 horas)
-# Se quero disparar às 15:00 no Brasil, coloco "18:00"
-agendar.every().day.at("18:15").do(enviar_relatorio_agendado)
-print("🚀 Script rodando... Aguardando horário para disparo.")
+    with open("relatorio_automatico.xlsx", "rb") as f:
+      msg.add_attachment(
+          f.read(),
+          maintype="application",
+          subtype="xlsx",
+          filename="relatorio_automatico.xlsx",
+      )
+
+    print("🚀 Conectando ao servidor SMTP para disparo...")
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+      smtp.login(remetente, senha_app)
+      smtp.send_message(msg)
+
+    print("Relatório enviado com sucesso! ✅")
+
+  except Exception as e:
+    print(f"❌ Erro crítico na integração com o SAP ou envio: {e}")
+    exit(1)
+
 
 if __name__ == "__main__":
-    # Loop infinito para manter o script vivo e verificando o relógio
-    while True:
-        agendar.run_pending()
-        time.sleep(60) # Verifica o relógio a cada 1 minuto
+  enviar_relatorio_direto()
