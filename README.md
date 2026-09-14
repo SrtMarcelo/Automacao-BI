@@ -1,46 +1,33 @@
-#  Sistema de BI e Automação de Relatórios
+# Sistema de BI e Automação de Relatórios 🚀
 
-Pipeline de dados desenvolvido em Python para automação de extração, tratamento e monitoramento de indicadores comerciais (KPIs). O sistema conecta-se a um banco de dados relacional para otimizar a tomada de decisões estratégicas.
+[![Pipeline de CI - SAP BI](https://github.com/SrtMarcelo/Automacao-BI/actions/workflows/ci.yml/badge.svg)](https://github.com/SrtMarcelo/Automacao-BI/actions)
+[![Python Version](https://img.shields.io/badge/python-3.11%20%7C%203.14-blue.svg)](https://www.python.org/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
----
-
-##  Tecnologias Utilizadas
-* **Python** (Linguagem principal)
-* **Pandas** (Manipulação e análise de dados)
-* **MySQL** / MySQL Workbench (Banco de dados relacional)
-* **Smtplib / EmailMessage** (Automação de envio de e-mails)
-* **PythonAnywhere** (Hospedagem e execução em nuvem)
+Pipeline de dados automatizado em Python voltado para a extração, tratamento, monitoramento de indicadores comerciais (KPIs) e integração corporativa. O projeto possui arquitetura validada por suítes de testes automatizados e esteira de CI/CD contínua.
 
 ---
 
-##  Como Funciona
-1. **Extração de Dados:** O script se conecta de forma automatizada à fonte de dados para resgatar informações brutas de vendas e operações.
-2. **Processamento e Análise:** Limpa, filtra e estrutura as informações utilizando scripts em Python (`analise_dados.py` e `automacao.py`), gerando planilhas automatizadas em formato Excel.
-3. **Disparo Automático:** O sistema dispara o e-mail de forma programada com o anexo pronto para visualização gerencial (`disparo_automatico.py`).
+## 🏛️ Visão Geral da Arquitetura
+
+O ecossistema foi projetado sob rigorosos padrões de engenharia de software para garantir robustez, consistência e rastreabilidade dos dados:
+
+* **Camada de Extração & Persistência:** Conexão segura e estruturada com bancos de dados relacionais via SQLAlchemy e manipulação de alta performance com Pandas.
+* **Automação de Disparos:** Módulo integrado para envio programado e seguro de relatórios executivos gerenciais.
+* **Garantia de Qualidade (Quality Gates):** 
+  * Padronização estricta de código via **Black** e **Ruff** (PEP 8).
+  * Alta cobertura de testes unitários automatizados (**Pytest**) com validação estrita em pipeline.
+* **CI/CD Integrado:** Esteira de integração contínua (GitHub Actions) que executa linting, testes e auditoria de cobertura de código a cada alteração no repositório.
 
 ---
 
-##  Como executar o projeto
+## 🛠️ Stack Tecnológica
 
-Se você quiser clonar e testar o código no seu ambiente local, siga os passos abaixo:
+* **Linguagem:** Python 3.11 / 3.14
+* **Engenharia de Dados:** Pandas, SQLAlchemy, MySQL
+* **Qualidade & Testes:** Pytest, Pytest-Cov, Black, Ruff
+* **Infraestrutura CI/CD:** GitHub Actions
 
-1. **Clone o repositório:**
-   ```bash
-   git clone [https://github.com/SrtMarcelo/Automacao-BI.git](https://github.com/SrtMarcelo/Automacao-BI.git)
-Configure o Banco de Dados:
-
-Certifique-se de ter o MySQL instalado e rodando.
-
-Ajuste as credenciais de acesso ao banco dentro dos arquivos de script, se necessário.
-
-Execute os scripts:
-
-Para rodar a rotina de automação:
-
-Bash
-python automacao.py
-Para processar e analisar os indicadores:
-
-Bash
-python analise_dados.py
-
+---
+*© Desenvolvido por Marcelo Ferreira De Jesus. Todos os direitos reservados.*
