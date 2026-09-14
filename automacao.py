@@ -39,7 +39,7 @@ def enviar_relatorio():
 
     try:
         df = pd.read_excel("relatorio_automatico.xlsx")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.exception(f"❌ Erro crítico ao ler a planilha Excel: {e}")
         return
 
@@ -76,7 +76,7 @@ Sistema Automático de BI - Jotta Store
             subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             filename=file_name,
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.exception(f"❌ Erro ao anexar o arquivo: {e}")
         return
 
@@ -88,7 +88,7 @@ Sistema Automático de BI - Jotta Store
 
             logger.info("Relatório enviado com sucesso!")
 
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.exception(f"❌ Erro durante o envio do e-mail: {e}")
 
 

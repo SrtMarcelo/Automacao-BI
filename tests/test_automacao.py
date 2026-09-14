@@ -1,6 +1,7 @@
-from unittest.mock import patch, mock_open
-import pandas as pd
+from unittest.mock import mock_open, patch
+
 import automacao
+import pandas as pd
 
 
 def test_enviar_relatorio_arquivo_nao_encontrado():

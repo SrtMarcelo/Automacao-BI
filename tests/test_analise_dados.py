@@ -1,7 +1,8 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
 import analise_dados
 import bcrypt
+import pytest
 
 
 def test_gerar_senha_hash():

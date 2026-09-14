@@ -1,6 +1,7 @@
 import os
+
 import pandas as pd
-from sqlalchemy import create_engine, Table, Column, Integer, String, Float, MetaData
+from sqlalchemy import Column, Float, Integer, MetaData, String, Table, create_engine
 
 
 class SAPDataPipeline:

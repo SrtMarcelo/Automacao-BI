@@ -1,8 +1,6 @@
-import os
-from unittest.mock import MagicMock, patch
-import pandas as pd
-import pytest
+from unittest.mock import patch
 
+import pandas as pd
 from automacao import enviar_relatorio
 from disparo_automatico import enviar_relatorio_direto
 
