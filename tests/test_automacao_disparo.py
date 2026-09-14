@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import mock_open, patch
 
 import pandas as pd
 from automacao import enviar_relatorio
@@ -19,8 +19,9 @@ def test_automacao_enviar_relatorio(mock_smtp):
 
     with patch("pandas.read_excel", return_value=df_mock):
         with patch("os.path.exists", return_value=True):
-            enviar_relatorio()
-            mock_smtp.assert_called_once()
+            with patch("builtins.open", mock_open(read_data=b"excel_data")):
+                enviar_relatorio()
+                mock_smtp.assert_called_once()
 
 
 @patch("smtplib.SMTP_SSL")

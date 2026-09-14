@@ -5,9 +5,10 @@ import pandas as pd
 
 
 def test_enviar_relatorio_arquivo_nao_encontrado():
-    with patch("os.path.exists", return_value=False) as mock_exists:
+    with patch("os.path.exists") as mock_exists:
+        mock_exists.side_effect = [True, False, True]
         automacao.enviar_relatorio()
-        mock_exists.assert_called_once()
+        mock_exists.assert_any_call("relatorio_automatico.xlsx")
 
 
 def test_enviar_relatorio_erro_leitura_excel():
