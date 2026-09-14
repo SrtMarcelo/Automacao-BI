@@ -1,5 +1,7 @@
 import os
+
 from celery import Celery
+
 from integracao_sap import SAPDataPipeline
 
 # Configuração do Celery utilizando o Redis do Docker como broker de mensagens

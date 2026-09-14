@@ -1,0 +1,28 @@
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+exclude = [
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    "alembic/versions",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = [
+    "E501",
+    "DTZ005", # Permite datetime.now() sem timezone explícito
+    "LOG015", # Permite logging raiz em scripts simples
+    "BLE001", # Permite capturar Exception genérica
+    "G201",   # Permite logger.error com exc_info=True
+    "PLR1722",# Permite exit() direto
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

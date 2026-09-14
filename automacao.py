@@ -1,17 +1,15 @@
-from datetime import datetime
 import logging
-from logging.handlers import RotatingFileHandler
 import os
 import smtplib
 from email.message import EmailMessage
+from logging.handlers import RotatingFileHandler
+
 import pandas as pd
 
 # 1. Configuração de Logging de Nível Industrial Sênior
 # Garante a criação do diretório de logs e o uso de rotação (evita estouro de disco)
 os.makedirs("logs", exist_ok=True)
-log_formatter = logging.Formatter(
-    "%(asctime)s [%(levelname)s] %(name)s - %(message)s"
-)
+log_formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s - %(message)s")
 log_file = "logs/automacao_bi.log"
 
 # Rotação de arquivo: máximo de 5MB por arquivo, mantendo até 3 backups históricos
@@ -41,10 +39,8 @@ def enviar_relatorio():
 
     try:
         df = pd.read_excel("relatorio_automatico.xlsx")
-    except Exception as e:
-        logger.critical(
-            f"❌ Erro crítico ao ler a planilha Excel: {e}", exc_info=True
-        )
+    except Exception as e:  # noqa: BLE001
+        logger.exception(f"❌ Erro crítico ao ler a planilha Excel: {e}")
         return
 
     nome_arquivo = "relatorio_automatico.xlsx"
@@ -80,8 +76,8 @@ Sistema Automático de BI - Jotta Store
             subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             filename=file_name,
         )
-    except Exception as e:
-        logger.error(f"❌ Erro ao anexar o arquivo: {e}", exc_info=True)
+    except Exception as e:  # noqa: BLE001
+        logger.exception(f"❌ Erro ao anexar o arquivo: {e}")
         return
 
     try:
@@ -92,10 +88,8 @@ Sistema Automático de BI - Jotta Store
 
             logger.info("Relatório enviado com sucesso!")
 
-    except Exception as e:
-        logger.error(
-            f"❌ Erro durante o envio do e-mail: {e}", exc_info=True
-        )
+    except Exception as e:  # noqa: BLE001
+        logger.exception(f"❌ Erro durante o envio do e-mail: {e}")
 
 
 if __name__ == "__main__":
