@@ -26,7 +26,9 @@ def test_celery_worker_execucao(mock_celery):
     try:
         # Testa a nova task assíncrona explicitamente para garantir cobertura
         if hasattr(celery_worker, "enviar_pesagem_sap_async"):
-            dados_teste = {"chave_acesso": "12345678901234567890123456789012345678901234"}
+            dados_teste = {
+                "chave_acesso": "12345678901234567890123456789012345678901234"
+            }
             try:
                 celery_worker.enviar_pesagem_sap_async.run(dados_teste)
             except Exception:

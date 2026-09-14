@@ -15,8 +15,9 @@ logging.basicConfig(
     filename=LOG_FILE,
     level=logging.INFO,
     format="%(asctime)s | [%(levelname)s] | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
+
 
 def registrar_divergencia_critica(dados_pesagem: dict, diferenca_percentual: float):
     """
@@ -32,7 +33,9 @@ def registrar_divergencia_critica(dados_pesagem: dict, diferenca_percentual: flo
     )
 
     # 1. Grava no log estruturado de auditoria
-    logging.error(f"DIVERGENCIA_CRITICA | {dados_pesagem} | Diferenca: {diferenca_percentual:.2f}%")
+    logging.error(
+        f"DIVERGENCIA_CRITICA | {dados_pesagem} | Diferenca: {diferenca_percentual:.2f}%"
+    )
     print(f"📝 Log de auditoria gerado: {mensagem_alerta}")
 
     # 2. Dispara o alerta operacional (E-mail / Webhook)
@@ -48,7 +51,9 @@ def _disparar_alerta_operacional(conteudo_alerta: str):
     senha_app = os.getenv("EMAIL_PASSWORD")
 
     if not remetente or not destinatario or not senha_app:
-        print("⚠️ Credenciais de e-mail não configuradas no .env. Alerta registrado apenas em log.")
+        print(
+            "⚠️ Credenciais de e-mail não configuradas no .env. Alerta registrado apenas em log."
+        )
         return
 
     try:

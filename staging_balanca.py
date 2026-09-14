@@ -1,6 +1,7 @@
 import sqlite3
 from typing import Dict, Any, List
 
+
 class StagingBalancaRepo:
     def __init__(self, db_path: str = "staging_balanca.db"):
         self.db_path = db_path
@@ -34,20 +35,23 @@ class StagingBalancaRepo:
         """Insere uma pesagem validada na base de staging."""
         try:
             cursor = self._conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO pesagens_staging 
                 (chave_acesso, fornecedor, frotista, tipo_produto, peso_bruto, tara, peso_liquido, status)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                dados.get("chave_acesso"),
-                dados.get("fornecedor"),
-                dados.get("frotista"),
-                dados.get("tipo_produto"),
-                dados.get("peso_bruto"),
-                dados.get("tara"),
-                dados.get("peso_liquido"),
-                dados.get("status", "APROVADO")
-            ))
+            """,
+                (
+                    dados.get("chave_acesso"),
+                    dados.get("fornecedor"),
+                    dados.get("frotista"),
+                    dados.get("tipo_produto"),
+                    dados.get("peso_bruto"),
+                    dados.get("tara"),
+                    dados.get("peso_liquido"),
+                    dados.get("status", "APROVADO"),
+                ),
+            )
             self._conn.commit()
             return True
         except sqlite3.IntegrityError:

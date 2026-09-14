@@ -11,7 +11,10 @@ from celery import Celery
 load_dotenv()
 
 # Configuração do Celery
-celery_app = Celery('automacao_bi', broker=os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0"))
+celery_app = Celery(
+    "automacao_bi", broker=os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+)
+
 
 @celery_app.task(bind=True, max_retries=5, default_retry_delay=60)
 def enviar_pesagem_sap_async(self, dados_pesagem: dict):
@@ -21,11 +24,16 @@ def enviar_pesagem_sap_async(self, dados_pesagem: dict):
     """
     try:
         sap_url = os.getenv("SAP_API_URL", "https://seu-ambiente-sap/sap/opu/odata/...")
-        
+
         # Se for ambiente de simulação/mock
         if "seu-ambiente-sap" in sap_url or "mock" in sap_url:
-            print(f"⚠️ Modo simulação: Processando pesagem da chave {dados_pesagem.get('chave_acesso')}...")
-            return {"status": "SUCESSO_MOCK", "chave": dados_pesagem.get("chave_acesso")}
+            print(
+                f"⚠️ Modo simulação: Processando pesagem da chave {dados_pesagem.get('chave_acesso')}..."
+            )
+            return {
+                "status": "SUCESSO_MOCK",
+                "chave": dados_pesagem.get("chave_acesso"),
+            }
 
         print(f"🔄 Enviando pesagem para API OData do SAP S/4HANA...")
         response = requests.post(
@@ -37,8 +45,14 @@ def enviar_pesagem_sap_async(self, dados_pesagem: dict):
         response.raise_for_status()
         return {"status": "SUCESSO", "resposta": response.json()}
 
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, Exception) as exc:
-        print(f"❌ Falha de rede/conexão com SAP. Tentativa {self.request.retries + 1}/5. Erro: {exc}")
+    except (
+        requests.exceptions.ConnectionError,
+        requests.exceptions.Timeout,
+        Exception,
+    ) as exc:
+        print(
+            f"❌ Falha de rede/conexão com SAP. Tentativa {self.request.retries + 1}/5. Erro: {exc}"
+        )
         # Aciona o mecanismo nativo de nova tentativa do Celery
         raise self.retry(exc=exc)
 
