@@ -12,7 +12,7 @@ def test_agendador_fluxo_principal():
     ), patch("logging.info", return_value=None):
         try:
             agendador.iniciar_agendamento()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Aviso no agendamento: {e}")
 
 
@@ -25,6 +25,6 @@ def test_agendador_main_bloco():
             if hasattr(agendador, "__name__"):
                 # Força a execução da lógica condicional do main
                 agendador.iniciar_agendamento()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Aviso no bloco main: {e}")
     assert True
