@@ -1,4 +1,4 @@
-# Sistema de BI e Automação de Relatórios 🚀
+# Sistema de BI e Automação de Relatórios 
 
 [![Pipeline de CI - SAP BI](https://github.com/SrtMarcelo/Automacao-BI/actions/workflows/ci.yml/badge.svg)](https://github.com/SrtMarcelo/Automacao-BI/actions)
 [![Python Version](https://img.shields.io/badge/python-3.11%20%7C%203.14-blue.svg)](https://www.python.org/)
