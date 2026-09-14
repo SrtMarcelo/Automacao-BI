@@ -1,5 +1,5 @@
 import sqlite3
-from typing import Dict, Any, List
+from typing import Any
 
 
 class StagingBalancaRepo:
@@ -31,7 +31,7 @@ class StagingBalancaRepo:
         """)
         self._conn.commit()
 
-    def inserir_pesagem(self, dados: Dict[str, Any]) -> bool:
+    def inserir_pesagem(self, dados: dict[str, Any]) -> bool:
         """Insere uma pesagem validada na base de staging."""
         try:
             cursor = self._conn.cursor()
@@ -57,7 +57,7 @@ class StagingBalancaRepo:
         except sqlite3.IntegrityError:
             return False
 
-    def listar_todas(self) -> List[tuple]:
+    def listar_todas(self) -> list[tuple]:
         """Retorna todos os registros salvos no staging."""
         cursor = self._conn.cursor()
         cursor.execute("SELECT * FROM pesagens_staging")

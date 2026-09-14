@@ -1,12 +1,13 @@
+from typing import Any
+
 import pandas as pd
-from typing import Dict, Any, List
 
 
 class FechamentoTurnoService:
-    def __init__(self, dados_pesagem: List[Dict[str, Any]]):
+    def __init__(self, dados_pesagem: list[dict[str, Any]]):
         self.df = pd.DataFrame(dados_pesagem)
 
-    def consolidar_turno(self) -> Dict[str, pd.DataFrame]:
+    def consolidar_turno(self) -> dict[str, pd.DataFrame]:
         """Consolida os dados da balança separando por frotistas, fornecedores,
         variedades de matéria-prima e cálculo de quebras de peso.
         """

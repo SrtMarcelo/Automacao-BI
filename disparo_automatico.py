@@ -5,8 +5,8 @@ from email.message import EmailMessage
 
 import pandas as pd
 import requests
-from dotenv import load_dotenv
 from celery import Celery
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -35,7 +35,7 @@ def enviar_pesagem_sap_async(self, dados_pesagem: dict):
                 "chave": dados_pesagem.get("chave_acesso"),
             }
 
-        print(f"🔄 Enviando pesagem para API OData do SAP S/4HANA...")
+        print("🔄 Enviando pesagem para API OData do SAP S/4HANA...")
         response = requests.post(
             sap_url,
             json=dados_pesagem,
@@ -48,14 +48,12 @@ def enviar_pesagem_sap_async(self, dados_pesagem: dict):
     except (
         requests.exceptions.ConnectionError,
         requests.exceptions.Timeout,
-        Exception,
     ) as exc:
         print(
             f"❌ Falha de rede/conexão com SAP. Tentativa {self.request.retries + 1}/5. Erro: {exc}"
         )
         # Aciona o mecanismo nativo de nova tentativa do Celery
         raise self.retry(exc=exc)
-
 
 def enviar_relatorio_direto():
     try:

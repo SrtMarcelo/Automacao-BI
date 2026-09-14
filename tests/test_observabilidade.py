@@ -1,5 +1,6 @@
-from unittest.mock import patch, MagicMock
-from observabilidade import registrar_divergencia_critica, _disparar_alerta_operacional
+from unittest.mock import MagicMock, patch
+
+from observabilidade import _disparar_alerta_operacional, registrar_divergencia_critica
 
 
 @patch("observabilidade.os.getenv")

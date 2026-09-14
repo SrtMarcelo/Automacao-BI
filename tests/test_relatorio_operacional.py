@@ -1,4 +1,3 @@
-import pytest
 import pandas as pd
 from relatorio_operacional_sap import FechamentoTurnoService
 

@@ -1,5 +1,6 @@
 import pytest
-from regras_fiscais import validar_nota_fiscal_produtor, RegraFiscalError
+
+from regras_fiscais import RegraFiscalError, validar_nota_fiscal_produtor
 
 
 def test_validacao_fiscal_sucesso():

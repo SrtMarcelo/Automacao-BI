@@ -2,6 +2,7 @@ import logging
 import os
 import smtplib
 from email.message import EmailMessage
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -18,11 +19,12 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+# Logger próprio do módulo para cumprir o padrão industrial do Ruff (LOG015)
+logger = logging.getLogger(__name__)
+
 
 def registrar_divergencia_critica(dados_pesagem: dict, diferenca_percentual: float):
-    """
-    Registra uma divergência crítica no log de auditoria e dispara alerta operacional.
-    """
+    """Registra uma divergência crítica no log de auditoria e dispara alerta operacional."""
     mensagem_alerta = (
         f"🚨 DIVERGÊNCIA CRÍTICA DETECTADA!\n"
         f"Chave de Acesso: {dados_pesagem.get('chave_acesso', 'N/A')}\n"
@@ -32,8 +34,8 @@ def registrar_divergencia_critica(dados_pesagem: dict, diferenca_percentual: flo
         f"Status: Requer intervenção imediata do operador de pátio."
     )
 
-    # 1. Grava no log estruturado de auditoria
-    logging.error(
+    # 1. Grava no log estruturado de auditoria usando o logger próprio
+    logger.error(
         f"DIVERGENCIA_CRITICA | {dados_pesagem} | Diferenca: {diferenca_percentual:.2f}%"
     )
     print(f"📝 Log de auditoria gerado: {mensagem_alerta}")
@@ -43,9 +45,7 @@ def registrar_divergencia_critica(dados_pesagem: dict, diferenca_percentual: flo
 
 
 def _disparar_alerta_operacional(conteudo_alerta: str):
-    """
-    Envia o alerta por e-mail para o operador de pátio / analista de BI.
-    """
+    """Envia o alerta por e-mail para o operador de pátio / analista de BI."""
     remetente = os.getenv("EMAIL_USER")
     destinatario = os.getenv("EMAIL_DESTINATARIO")
     senha_app = os.getenv("EMAIL_PASSWORD")
@@ -67,5 +67,5 @@ def _disparar_alerta_operacional(conteudo_alerta: str):
             smtp.login(remetente, senha_app)
             smtp.send_message(msg)
         print("📧 Alerta operacional disparado por e-mail com sucesso!")
-    except Exception as e:
+    except (smtplib.SMTPException, OSError) as e:
         print(f"❌ Falha ao enviar alerta por e-mail: {e}")
