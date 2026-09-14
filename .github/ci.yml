@@ -33,4 +33,6 @@ jobs:
 
     - name: Executar Testes Automatizados
       run: |
-        pytest -v
+       - name: Executar Testes Automatizados
+      run: |
+        pytest --cov=. --cov-report=term-missing --cov-fail-under=80 -o pythonpath="."
