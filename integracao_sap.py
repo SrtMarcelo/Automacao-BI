@@ -5,7 +5,6 @@ from sqlalchemy import Column, Float, Integer, MetaData, String, Table, create_e
 
 
 class SAPDataPipeline:
-
     def __init__(self):
         database_url = os.getenv("DATABASE_URL", "sqlite:///bi_staging.db")
         self.engine = create_engine(database_url)
