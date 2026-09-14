@@ -1,10 +1,10 @@
 import os
-
-import pandas as pd
 from sqlalchemy import Column, Float, Integer, MetaData, String, Table, create_engine
+import pandas as pd
 
 
 class SAPDataPipeline:
+
     def __init__(self):
         database_url = os.getenv("DATABASE_URL", "sqlite:///bi_staging.db")
         self.engine = create_engine(database_url)
@@ -98,7 +98,9 @@ class SAPDataPipeline:
     def run(self, invalid_param=False):
         """Executa o pipeline completo (Extract -> Transform -> Load)."""
         if invalid_param:
-            raise Exception("Parâmetro inválido fornecido para a execução do pipeline.")
+            raise ValueError(
+                "Parâmetro inválido fornecido para a execução do pipeline."
+            )
 
         raw_data = self.extract_sap_data()
         transformed_data = self.transform_data(raw_data)
