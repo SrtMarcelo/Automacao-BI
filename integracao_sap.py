@@ -2,12 +2,13 @@ import os
 import pandas as pd
 from sqlalchemy import create_engine, Table, Column, Integer, String, Float, MetaData
 
+
 class SAPDataPipeline:
     def __init__(self):
         database_url = os.getenv("DATABASE_URL", "sqlite:///bi_staging.db")
         self.engine = create_engine(database_url)
         self.metadata = MetaData()
-        
+
         # Definição da tabela de staging
         self.staging_table = Table(
             "staging_sap_vendas",
@@ -17,9 +18,9 @@ class SAPDataPipeline:
             Column("Operacao", String(100)),
             Column("PesoLiquido", Float),
             Column("Material", String(100)),
-            Column("Status", String(50))
+            Column("Status", String(50)),
         )
-        
+
         # Cria a tabela no banco se não existir
         self.metadata.create_all(self.engine)
 
@@ -31,23 +32,25 @@ class SAPDataPipeline:
                 "Operacao": "Balança 01",
                 "PesoLiquido": 45000.0,
                 "Material": "Cana de Açúcar",
-                "Status": "Pendente"
+                "Status": "Pendente",
             },
             {
                 "Centro": "3010",
                 "Operacao": "Balança 02",
                 "PesoLiquido": 52000.0,
                 "Material": "Cana de Açúcar",
-                "Status": "Pendente"
-            }
+                "Status": "Pendente",
+            },
         ]
         return pd.DataFrame(dados)
 
     def transform_data(self, df):
         """Transforma e valida os dados extraídos."""
         if df is None or df.empty:
-            raise ValueError("DataFrame vazio ou inválido fornecido para transformação.")
-        
+            raise ValueError(
+                "DataFrame vazio ou inválido fornecido para transformação."
+            )
+
         # Exemplo de transformação simples (garantir tipos ou limpar dados)
         df = df.copy()
         df["PesoLiquido"] = pd.to_numeric(df["PesoLiquido"], errors="coerce")
@@ -62,19 +65,23 @@ class SAPDataPipeline:
             for _, row in df.iterrows():
                 # Lógica de idempotência simulada (atualiza ou insere)
                 select_stmt = self.staging_table.select().where(
-                    (self.staging_table.c.Centro == row["Centro"]) &
-                    (self.staging_table.c.Operacao == row["Operacao"])
+                    (self.staging_table.c.Centro == row["Centro"])
+                    & (self.staging_table.c.Operacao == row["Operacao"])
                 )
                 existing = conn.execute(select_stmt).fetchone()
 
                 if existing:
-                    update_stmt = self.staging_table.update().where(
-                        (self.staging_table.c.Centro == row["Centro"]) &
-                        (self.staging_table.c.Operacao == row["Operacao"])
-                    ).values(
-                        PesoLiquido=row["PesoLiquido"],
-                        Material=row["Material"],
-                        Status=row["Status"]
+                    update_stmt = (
+                        self.staging_table.update()
+                        .where(
+                            (self.staging_table.c.Centro == row["Centro"])
+                            & (self.staging_table.c.Operacao == row["Operacao"])
+                        )
+                        .values(
+                            PesoLiquido=row["PesoLiquido"],
+                            Material=row["Material"],
+                            Status=row["Status"],
+                        )
                     )
                     conn.execute(update_stmt)
                 else:
@@ -83,7 +90,7 @@ class SAPDataPipeline:
                         Operacao=row["Operacao"],
                         PesoLiquido=row["PesoLiquido"],
                         Material=row["Material"],
-                        Status=row["Status"]
+                        Status=row["Status"],
                     )
                     conn.execute(insert_stmt)
 
@@ -91,7 +98,7 @@ class SAPDataPipeline:
         """Executa o pipeline completo (Extract -> Transform -> Load)."""
         if invalid_param:
             raise Exception("Parâmetro inválido fornecido para a execução do pipeline.")
-        
+
         raw_data = self.extract_sap_data()
         transformed_data = self.transform_data(raw_data)
         self.load_to_staging(transformed_data)

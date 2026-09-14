@@ -5,19 +5,22 @@ from unittest.mock import patch
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 import agendador
 
+
 def test_agendador_fluxo_principal():
-    with patch("apscheduler.schedulers.blocking.BlockingScheduler.start"), \
-         patch("time.sleep", return_value=None), \
-         patch("logging.info", return_value=None):
+    with patch("apscheduler.schedulers.blocking.BlockingScheduler.start"), patch(
+        "time.sleep", return_value=None
+    ), patch("logging.info", return_value=None):
         try:
             agendador.iniciar_agendamento()
         except Exception:
             pass
 
+
 def test_agendador_main_bloco():
     # Simula a execução do bloco main para atingir 100% de cobertura no arquivo agendador.py
-    with patch("apscheduler.schedulers.blocking.BlockingScheduler.start"), \
-         patch("logging.info", return_value=None):
+    with patch("apscheduler.schedulers.blocking.BlockingScheduler.start"), patch(
+        "logging.info", return_value=None
+    ):
         try:
             if hasattr(agendador, "__name__"):
                 # Força a execução da lógica condicional do main

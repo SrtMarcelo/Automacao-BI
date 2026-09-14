@@ -20,12 +20,10 @@ def cadastrar_usuario(nome, email, senha_pura, db_engine=engine):
     """Realiza o cadastro no banco já com a senha criptografada"""
     if not nome or not email or not senha_pura:
         raise ValueError("Dados incompletos para cadastro.")
-    
+
     try:
         senha_protegida = gerar_senha_hash(senha_pura)
-        query = text(
-            "INSERT INTO usuarios (nome, email, senha) VALUES (:n, :e, :s)"
-        )
+        query = text("INSERT INTO usuarios (nome, email, senha) VALUES (:n, :e, :s)")
         with db_engine.connect() as conexao:
             conexao.execute(query, {"n": nome, "e": email, "s": senha_protegida})
             conexao.commit()
@@ -75,7 +73,7 @@ def autenticar_usuario(email, senha, db_engine=engine):
             return "usuario_nao_encontrado"
 
         hash_do_banco = resultado[0]
-        
+
         # Compatibilidade para string ou bytes vindos do banco
         if isinstance(hash_do_banco, str):
             hash_bytes = hash_do_banco.encode("utf-8")

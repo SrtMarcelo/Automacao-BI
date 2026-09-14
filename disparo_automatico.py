@@ -13,10 +13,12 @@ load_dotenv()
 def enviar_relatorio_direto():
     try:
         sap_url = os.getenv("SAP_API_URL", "https://seu-ambiente-sap/sap/opu/odata/...")
-        
+
         # Se a URL contiver o placeholder padrão ou a flag de mock, usamos os dados simulados
         if "seu-ambiente-sap" in sap_url or "mock" in sap_url:
-            print("⚠️ URL do SAP não configurada ou modo simulação detectado. Utilizando payload mockado de balança...")
+            print(
+                "⚠️ URL do SAP não configurada ou modo simulação detectado. Utilizando payload mockado de balança..."
+            )
             dados_mock = [
                 {
                     "Centro": "3010",
