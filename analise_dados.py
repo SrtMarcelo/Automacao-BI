@@ -29,7 +29,8 @@ def cadastrar_usuario(nome, email, senha_pura, db_engine=engine):
             conexao.execute(query, {"n": nome, "e": email, "s": senha_protegida})
             conexao.commit()
         return True
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
+   
         print(f"❌ Erro ao cadastrar: {e}")
         return False
 
