@@ -1,30 +1,29 @@
-import os
-import sys
-from unittest.mock import patch
+import time
+import logging
+from apscheduler.schedulers.blocking import BlockingScheduler
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-import agendador
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | [%(levelname)s] | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 
+def tarefa_agendada():
+    """
+    Função executada periodicamente pelo agendador.
+    """
+    logging.info("Executando tarefa agendada de integração/BI...")
 
-def test_agendador_fluxo_principal():
-    with patch("apscheduler.schedulers.blocking.BlockingScheduler.start"), patch(
-        "time.sleep", return_value=None
-    ), patch("logging.info", return_value=None):
-        try:
-            agendador.iniciar_agendamento()
-        except Exception as e:  # noqa: BLE001
-            print(f"Aviso no agendamento: {e}")
+def iniciar_agendamento():
+    """
+    Configura e inicia o agendador de tarefas em background/bloco.
+    """
+    scheduler = BlockingScheduler()
+    # Exemplo: agenda para rodar a cada 1 hora ou conforme sua regra de negócio
+    scheduler.add_job(tarefa_agendada, 'interval', hours=1)
+    
+    logging.info("Agendador iniciado com sucesso.")
+    scheduler.start()
 
-
-def test_agendador_main_bloco():
-    # Simula a execução do bloco main para atingir 100% de cobertura no arquivo agendador.py
-    with patch("apscheduler.schedulers.blocking.BlockingScheduler.start"), patch(
-        "logging.info", return_value=None
-    ):
-        try:
-            if hasattr(agendador, "__name__"):
-                # Força a execução da lógica condicional do main
-                agendador.iniciar_agendamento()
-        except Exception as e:  # noqa: BLE001
-            print(f"Aviso no bloco main: {e}")
-    assert True
+if __name__ == "__main__":
+    iniciar_agendamento()
