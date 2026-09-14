@@ -11,28 +11,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout do Código
-      uses: actions/checkout@v4
+      - name: Checkout do Código
+        uses: actions/checkout@v4
 
-    - name: Configurar Python 3.11
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-        cache: 'pip'
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
 
-    - name: Instalar Dependências
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install ruff black pytest
+      - name: Instalar Dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff black pytest pytest-cov
 
-    - name: Executar Linting e Code Style (Quality Gate)
-      run: |
-        black --check .
-        ruff check .
+      - name: Executar Linting e Code Style (Quality Gate)
+        run: |
+          black --check .
+          ruff check .
 
-    - name: Executar Testes Automatizados
-      run: |
-       - name: Executar Testes Automatizados
-      run: |
-        pytest --cov=. --cov-report=term-missing --cov-fail-under=80 -o pythonpath="."
+      - name: Executar Testes Automatizados e Verificar Cobertura
+        run: |
+          pytest --cov=. --cov-report=term-missing --cov-fail-under=80 -o pythonpath="."
