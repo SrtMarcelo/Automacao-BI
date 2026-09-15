@@ -8,6 +8,9 @@ import requests
 from celery import Celery
 from dotenv import load_dotenv
 
+# Importando as métricas do Prometheus
+from observabilidade_prometheus import ERROS_CRITICOS, TOTAL_PESAGENS
+
 load_dotenv()
 
 # Configuração do Celery
@@ -30,6 +33,10 @@ def enviar_pesagem_sap_async(self, dados_pesagem: dict):
             print(
                 f"⚠️ Modo simulação: Processando pesagem da chave {dados_pesagem.get('chave_acesso')}..."
             )
+            
+            # 📊 Incrementa métrica de sucesso (incluindo mock) no Prometheus
+            TOTAL_PESAGENS.labels(status="sucesso").inc()
+
             return {
                 "status": "SUCESSO_MOCK",
                 "chave": dados_pesagem.get("chave_acesso"),
@@ -43,6 +50,10 @@ def enviar_pesagem_sap_async(self, dados_pesagem: dict):
             timeout=30,
         )
         response.raise_for_status()
+
+        # 📊 Incrementa métrica de sucesso no Prometheus
+        TOTAL_PESAGENS.labels(status="sucesso").inc()
+
         return {"status": "SUCESSO", "resposta": response.json()}
 
     except (
@@ -54,6 +65,7 @@ def enviar_pesagem_sap_async(self, dados_pesagem: dict):
         )
         # Aciona o mecanismo nativo de nova tentativa do Celery
         raise self.retry(exc=exc)
+
 
 def enviar_relatorio_direto():
     try:
@@ -121,7 +133,14 @@ def enviar_relatorio_direto():
 
         print("Relatório enviado com sucesso! ✅")
 
+        # 📊 Incrementa métrica de sucesso do relatório no Prometheus
+        TOTAL_PESAGENS.labels(status="sucesso").inc()
+
     except Exception as e:  # noqa: BLE001
+        # 🚨 Registra erro crítico e falha no Prometheus
+        ERROS_CRITICOS.inc()
+        TOTAL_PESAGENS.labels(status="erro").inc()
+
         print(f"❌ Erro crítico na integração ou envio: {e}")
         sys.exit(1)
 
