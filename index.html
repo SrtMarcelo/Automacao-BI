@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Executivo Industrial - Centro de Controle Integrado</title>
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-hover: #047857;
+            --primary-light: #ecfdf5;
+            --primary-border: #a7f3d0;
+            --bg-main: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #cbd5e1;
+            --cell-border: #94a3b8;
+            --transition: all 0.2s ease;
+            --accent-blue: #2563eb;
+            --color-line: #059669;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            padding: 30px 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--surface);
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        .header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            color: var(--text-main);
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        /* Menu de Navegação Executiva por Setores */
+        .exec-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            overflow-x: auto;
+        }
+
+        .nav-btn {
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .nav-btn:hover {
+            background: #e2e8f0;
+            color: var(--text-main);
+        }
+
+        .nav-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* KPIs Executivos Globais Interativos */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px;
+            border-left: 4px solid var(--primary);
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px -3px rgba(0,0,0,0.08);
+            border-color: var(--primary);
+        }
+
+        .metric-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .metric-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        .metric-sub {
+            font-size: 12px;
+            color: var(--primary-hover);
+            margin-top: 6px;
+            font-weight: 600;
+        }
+
+        /* Container do Gráfico em Linha Interativo */
+        .chart-container-box {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 28px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .chart-description {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            background: #ffffff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .line-chart-wrapper {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            position: relative;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        svg.line-svg {
+            width: 100%;
+            height: 130px;
+            overflow: visible;
+        }
+
+        .chart-axis-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            font-weight: 600;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Painel de Controle e Registro Executivo */
+        .exec-control-panel {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+        }
+
+        .panel-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) auto;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .input-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .input-group input, .input-group select {
+            padding: 10px 14px;
+            font-size: 13px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            position: relative;
+        }
+
+        button.btn-action {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            padding: 10px 18px;
+            border-radius: 8px;
+            transition: var(--transition);
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        button.btn-action:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button.btn-secondary {
+            background-color: var(--surface);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        button.btn-secondary:hover {
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+
+        button.btn-email {
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        button.btn-email:hover {
+            background-color: #1d4ed8;
+        }
+
+        .badge-live {
+            background: var(--primary-light);
+            color: var(--primary-hover);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid var(--primary-border);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        /* Mensagem de Erro de Preenchimento (Toast / Alerta) */
+        .form-alert {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            animation: fadeIn 0.2s ease;
+        }
+
+        /* Tabela Dinâmica */
+        .excel-table-container {
+            border: 2px solid var(--cell-border);
+            border-radius: 6px;
+            overflow: hidden;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .excel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1.2fr 1fr;
+        }
+
+        .excel-cell {
+            padding: 11px 12px;
+            font-size: 13px;
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background-color: #ffffff;
+            color: var(--text-main);
+        }
+
+        .excel-header-cell {
+            background-color: #e2e8f0;
+            color: #0f172a;
+            font-weight: 700;
+            border-right: 1px solid var(--cell-border);
+            border-bottom: 2px solid var(--cell-border);
+        }
+
+        .excel-grid > div:nth-child(7n) {
+            border-right: none;
+        }
+
+        .excel-row:hover .excel-cell {
+            background-color: #f8fafc;
+        }
+
+        .highlight-cell {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .empty-state {
+            grid-column: span 7;
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+            background: #ffffff;
+            font-size: 14px;
+        }
+
+        .inline-toast {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #065f46;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            display: none;
+            z-index: 100;
+            animation: fadeIn 0.2s ease;
+        }
+        .inline-toast::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px;
+            border-style: solid;
+            border-color: #065f46 transparent transparent transparent;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-flex">
+        <div>
+            <h1>Centro de Controle Integrado - Indústria & Processos</h1>
+            <p>Painel Executivo de Monitoramento Multissetorial em Tempo Real</p>
+        </div>
+        <div>
+            <span class="badge-live"><span class="live-dot"></span> <span id="dataAtualBadge">Carregando data...</span></span>
+        </div>
+    </div>
+
+    <!-- Menu de Navegação Executiva por Setores -->
+    <div class="exec-nav">
+        <button class="nav-btn active" onclick="mudarSetor('geral', this)">📊 Visão Geral Consolidada</button>
+        <button class="nav-btn" onclick="mudarSetor('balanca', this)">🚛 Balança</button>
+        <button class="nav-btn" onclick="mudarSetor('moenda', this)">⚙️ Moenda & Difusor</button>
+        <button class="nav-btn" onclick="mudarSetor('caldeira', this)">🔥 Caldeiras & Utilidades</button>
+        <button class="nav-btn" onclick="mudarSetor('laboratorio', this)">🧪 Laboratório / PCTS</button>
+    </div>
+
+    <!-- KPIs Executivos Globais Interativos -->
+    <div class="metrics-grid">
+        <div class="metric-card" onclick="mostrarGraficoSetorial('kpi1')">
+            <div class="metric-header-flex">
+                <span class="metric-title" id="kpiTitle1">Volume Total Processado</span>
+                <span style="font-size: 12px; color: var(--primary);">📈 Ver Gráfico em Linha</span>
+            </div>
+            <div class="metric-value" id="kpiValue1">4.850.2 t</div>
+            <div class="metric-sub" id="kpiSub1">Ritmo estável no turno</div>
+        </div>
+        <div class="metric-card" onclick="mostrarGraficoSetorial('kpi2')">
+            <div class="metric-header-flex">
+                <span class="metric-title" id="kpiTitle2">Eficiência Operacional</span>
+                <span style="font-size: 12px; color: var(--primary);">📈 Ver Gráfico em Linha</span>
+            </div>
+            <div class="metric-value" id="kpiValue2">94.8%</div>
+            <div class="metric-sub" id="kpiSub2">Dentro da meta diretoria</div>
+        </div>
+        <div class="metric-card" onclick="mostrarGraficoSetorial('kpi3')">
+            <div class="metric-header-flex">
+                <span class="metric-title" id="kpiTitle3">Qualidade Média (PCTS / ATR)</span>
+                <span style="font-size: 12px; color: var(--primary);">📈 Ver Gráfico em Linha</span>
+            </div>
+            <div class="metric-value" id="kpiValue3">142.5 kg/t</div>
+            <div class="metric-sub" id="kpiSub3">Safra atual otimizada</div>
+        </div>
+        <div class="metric-card" style="border-left-color: var(--accent-blue); cursor: default;">
+            <div class="metric-header-flex">
+                <span class="metric-title">Fechamento & Relatórios</span>
+            </div>
+            <div class="metric-value" style="color: var(--accent-blue); font-size: 16px; margin: 6px 0;">Automático Ativo</div>
+            <div style="position: relative;">
+                <button class="btn-email" onclick="dispararRelatorioEmail(this)" style="font-size: 11px; padding: 5px 10px; width: 100%;">📧 Enviar p/ Diretoria</button>
+                <div class="inline-toast">Relatório enviado com sucesso!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container do Gráfico em Linha Interativo -->
+    <div class="chart-container-box" id="chartBox">
+        <div class="chart-header">
+            <span class="chart-title" id="chartTitleText">Painel Analítico de Tendência Temporal</span>
+            <button class="btn-action btn-secondary" onclick="fecharGrafico()" style="font-size: 11px; padding: 3px 8px;">✕ Fechar</button>
+        </div>
+        <div class="chart-description" id="chartDescText">
+            Gráfico de linha dinâmico atualizado segundo as flutuações do setor em tempo real.
+        </div>
+        <div class="line-chart-wrapper">
+            <svg class="line-svg" id="lineSvgContainer" viewBox="0 0 600 120" preserveAspectRatio="none">
+                <!-- Linha e pontos injetados via JS -->
+            </svg>
+            <div class="chart-axis-labels" id="chartAxisLabels">
+                <!-- Rótulos de tempo dinâmicos -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Painel de Controle e Registro Executivo -->
+    <div class="exec-control-panel">
+        <div class="panel-title">
+            <span>⚡ Inserção de Dados e Fechamento de Turno em Tempo Real</span>
+        </div>
+        <!-- Alerta de preenchimento obrigatório -->
+        <div id="formAlertBox" class="form-alert">
+            ⚠️ Atenção: Por favor, preencha todos os campos obrigatórios antes de lançar na tabela.
+        </div>
+        <div class="controls-grid">
+            <div class="input-group">
+                <label for="inputCol1" id="labelCol1">Valor / Métrica Principal (Ex: Peso / Vazão):</label>
+                <input type="text" id="inputCol1" placeholder="Ex: 33.300 kg">
+            </div>
+            <div class="input-group">
+                <label for="inputCol2" id="labelCol2">Especificação / Linha / Equipamento:</label>
+                <input type="text" id="inputCol2" placeholder="Ex: Linha Norte (Elo 04)">
+            </div>
+            <div class="input-group">
+                <label for="selectSetorOrigem">Setor / Origem:</label>
+                <select id="selectSetorOrigem">
+                    <option value="Balança">Balança</option>
+                    <option value="PCTS">PCTS</option>
+                    <option value="Indústria">Indústria</option>
+                    <option value="Gestão">Gestão</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button class="btn-action" onclick="registrarDadoExecutivo()">Lançar na Tabela</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cabeçalho Dinâmico da Tabela -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="font-size: 16px; margin: 0; color: var(--text-main);" id="tituloTabela">Relatório Dinâmico: (Atualização Contínua)</h3>
+        <div style="display: flex; gap: 6px;">
+            <button class="btn-action btn-secondary" onclick="carregarDadosDiaAnterior()" style="font-size: 12px; padding: 6px 12px;">📅 Dados do dia anterior</button>
+            <div style="position: relative; display: inline-block;">
+                <button class="btn-email" onclick="dispararRelatorioEmail(this)" style="font-size: 12px; padding: 6px 12px; height: 100%;">📩 Enviar Relatório por E-mail</button>
+                <div class="inline-toast">Enviado com sucesso!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela Dinâmica Corporativa -->
+    <div class="excel-table-container">
+        <div class="excel-grid" id="tabelaGrid">
+            <!-- Cabeçalho injetado via JS -->
+        </div>
+    </div>
+</div>
+
+<script>
+    function obterDataBrasilia(subtrairDias = 0) {
+        const ag = new Date();
+        if (subtrairDias > 0) {
+            ag.setDate(ag.getDate() - subtrairDias);
+        }
+        return ag.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    let setorAtual = 'geral';
+    let modoDiaAnterior = false;
+    let dadosCache = [];
+    let temporizadoresCelulas = [];
+    let temporizadorGrafico = null;
+
+    window.onload = function() {
+        const dataHoje = obterDataBrasilia(0);
+        const horaStr = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        document.getElementById('dataAtualBadge').textContent = `${dataHoje} - ${horaStr} (Brasília)`;
+        carregarDadosSetor(setorAtual);
+    };
+
+    function limparTemporizadores() {
+        temporizadoresCelulas.forEach(t => clearInterval(t));
+        temporizadoresCelulas = [];
+        if (temporizadorGrafico) {
+            clearInterval(temporizadorGrafico);
+            temporizadorGrafico = null;
+        }
+    }
+
+    function mudarSetor(setor, btnElement) {
+        setorAtual = setor;
+        modoDiaAnterior = false;
+        fecharGrafico();
+        
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        if(btnElement) btnElement.classList.add('active');
+
+        if(setor === 'geral') {
+            document.getElementById('kpiTitle1').textContent = "Volume Total Processado";
+            document.getElementById('kpiValue1').textContent = "4.850.2 t";
+            document.getElementById('kpiTitle2').textContent = "Eficiência Operacional";
+            document.getElementById('kpiValue2').textContent = "94.8%";
+            document.getElementById('kpiTitle3').textContent = "Qualidade Média (ATR)";
+            document.getElementById('kpiValue3').textContent = "142.5 kg/t";
+        } else if(setor === 'balanca') {
+            document.getElementById('kpiTitle1').textContent = "Caminhões Pesados Hoje";
+            document.getElementById('kpiValue1').textContent = "142 frotas";
+            document.getElementById('kpiTitle2').textContent = "Tempo Médio de Pátio";
+            document.getElementById('kpiValue2').textContent = "18 min";
+            document.getElementById('kpiTitle3').textContent = "Peso Bruto Médio";
+            document.getElementById('kpiValue3').textContent = "48.2 t";
+        } else if(setor === 'moenda') {
+            document.getElementById('kpiTitle1').textContent = "Moagem Horária";
+            document.getElementById('kpiValue1').textContent = "540 t/h";
+            document.getElementById('kpiTitle2').textContent = "Extração de Caldo";
+            document.getElementById('kpiValue2').textContent = "96.7%";
+            document.getElementById('kpiTitle3').textContent = "Umidade Bagaço";
+            document.getElementById('kpiValue3').textContent = "48.2%";
+        } else if(setor === 'caldeira') {
+            document.getElementById('kpiTitle1').textContent = "Geração de Vapor";
+            document.getElementById('kpiValue1').textContent = "180 t/h";
+            document.getElementById('kpiTitle2').textContent = "Pressão da Caldeira";
+            document.getElementById('kpiValue2').textContent = "22.5 bar";
+            document.getElementById('kpiTitle3').textContent = "Coger. de Energia";
+            document.getElementById('kpiValue3').textContent = "42.1 MW";
+        } else if(setor === 'laboratorio') {
+            document.getElementById('kpiTitle1').textContent = "Amostras Analisadas";
+            document.getElementById('kpiValue1').textContent = "310 Laudos";
+            document.getElementById('kpiTitle2').textContent = "Teor de Sacarose (Pol)";
+            document.getElementById('kpiValue2').textContent = "16.8%";
+            document.getElementById('kpiTitle3').textContent = "Pureza Média";
+            document.getElementById('kpiValue3').textContent = "88.4%";
+        }
+
+        carregarDadosSetor(setor);
+    }
+
+    function carregarDadosSetor(setor) {
+        limparTemporizadores();
+        modoDiaAnterior = false;
+        const dataHoje = obterDataBrasilia(0);
+        document.getElementById('tituloTabela').textContent = `Relatório Dinâmico: Setor [${setor.toUpperCase()}] - Atualização em Tempo Real (${dataHoje})`;
+
+        setTimeout(() => {
+            if(setor === 'geral') {
+                dadosCache = [
+                    { col1: '15/09/2026 09:15', col2: 'Balança', col3: '48.500 kg', col4: '15.200 kg', col5: '33.300 kg', col6: 'Boa Vista', col7: 'Normal' },
+                    { col1: '15/09/2026 09:30', col2: 'Moenda', col3: '535 t/h', col4: '96.5%', col5: '48.1%', col6: 'Linha A', col7: 'Estável' },
+                    { col1: '15/09/2026 09:45', col2: 'Caldeira', col3: '21.8 bar', col4: '182 t/h', col5: '41.5 MW', col6: 'Caldeira 02', col7: 'Ideal' },
+                    { col1: '15/09/2026 10:00', col2: 'Laboratório', col3: '142.1 ATR', col4: '16.9 Pol', col5: '88.6 Pureza', col6: 'Lote 41', col7: 'Aprovado' }
+                ];
+            } else if(setor === 'balanca') {
+                dadosCache = [
+                    { col1: '15/09/2026 09:15', col2: 'KAT-8820', col3: '48.500 kg', col4: '15.200 kg', col5: '33.300 kg', col6: 'Boa Vista', col7: 'Linha Norte' },
+                    { col1: '15/09/2026 10:40', col2: 'OXY-4192', col3: '50.100 kg', col4: '16.000 kg', col5: '34.100 kg', col6: 'São Matheus', col7: 'Linha Sul' },
+                    { col1: '15/09/2026 11:55', col2: 'BRZ-3310', col3: '47.000 kg', col4: '14.800 kg', col5: '32.200 kg', col6: 'Boa Vista', col7: 'Linha Norte' }
+                ];
+            } else if(setor === 'moenda') {
+                dadosCache = [
+                    { col1: '15/09/2026 08:00', col2: 'Moenda Principal', col3: '542 t/h', col4: '96.8%', col5: '48.0%', col6: 'Conjunto 01', col7: 'Em Operação' },
+                    { col1: '15/09/2026 09:00', col2: 'Difusor', col3: '538 t/h', col4: '97.1%', col5: '47.9%', col6: 'Setor B', col7: 'Ótimo' }
+                ];
+            } else if(setor === 'caldeira') {
+                dadosCache = [
+                    { col1: '15/09/2026 08:30', col2: 'Caldeira 01', col3: '22.1 bar', col4: '92 t/h', col5: '21.0 MW', col6: 'Bagaço', col7: 'Estável' },
+                    { col1: '15/09/2026 08:30', col2: 'Caldeira 02', col3: '22.0 bar', col4: '90 t/h', col5: '21.1 MW', col6: 'Bagaço', col7: 'Estável' }
+                ];
+            } else if(setor === 'laboratorio') {
+                dadosCache = [
+                    { col1: '15/09/2026 08:10', col2: 'Am. 104', col3: '143.2 kg/t', col4: '17.0 %', col5: '89.1 %', col6: 'Boa Vista', col7: 'Liberado' },
+                    { col1: '15/09/2026 09:20', col2: 'Am. 105', col3: '141.8 kg/t', col4: '16.7 %', col5: '88.0 %', col6: 'São Matheus', col7: 'Liberado' }
+                ];
+            }
+
+            renderizarTabela(dadosCache, false);
+            iniciarAtualizacaoIndependenteNumerica();
+        }, 150);
+    }
+
+    // Carregar Resumo Consolidado do Dia Anterior (Todos os Setores)
+    function carregarDadosDiaAnterior() {
+        limparTemporizadores();
+        modoDiaAnterior = true;
+        fecharGrafico();
+        
+        // Remove destaque do menu de setores ativos
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+
+        const dataOntem = obterDataBrasilia(1);
+        document.getElementById('tituloTabela').textContent = `📅 Resumo Executivo Consolidado - Dia Anterior (${dataOntem}) - Todos os Setores`;
+
+        // Bloco consolidado de todas as partes importantes do dia anterior
+        const dadosOntemConsolidados = [
+            { col1: '14/09/2026 23:59', col2: 'Balança (Total)', col3: '145 Frotas', col4: '7.120 t Bruto', col5: '4.890 t Líquido', col6: 'Consolidado Pátio', col7: 'Fechado' },
+            { col1: '14/09/2026 23:59', col2: 'Moenda & Difusor', col3: '12.960 t/dia', col4: '96.8% Ext.', col5: '48.1% Umidade', col6: 'Linhas A e B', col7: 'Meta Atingida' },
+            { col1: '14/09/2026 23:59', col2: 'Caldeiras (Utilidades)', col3: '22.2 bar (Média)', col4: '181 t/h Vapor', col5: '41.8 MW Gerados', col6: 'Biomassa / Bagaço', col7: 'Estável' },
+            { col1: '14/09/2026 23:59', col2: 'Laboratório / PCTS', col3: '142.8 ATR Médio', col4: '16.8% Pol', col5: '88.5% Pureza', col6: '312 Laudos Totais', col7: 'Aprovado' },
+            { col1: '14/09/2026 23:59', col2: 'Gestão & Diretoria', col3: '95.2% Eficiência', col4: '0 Paradas Críticas', col5: 'Operação Contínua', col6: 'Turnos 1, 2 e 3', col7: 'Auditado' }
+        ];
+
+        renderizarTabela(dadosOntemConsolidados, true);
+    }
+
+    function renderizarTabela(dados, diaAnterior) {
+        const grid = document.getElementById('tabelaGrid');
+        let html = '';
+
+        let cabecalhos = ['Data / Hora', 'Setor / Identificação', 'Métrica 1', 'Métrica 2', 'Métrica 3', 'Origem / Destino', 'Status Executivo'];
+        
+        if (diaAnterior) {
+            cabecalhos = ['Data Fechamento', 'Setor Analisado', 'Indicador Principal', 'Indicador Secundário', 'Indicador Terciário', 'Escopo / Origem', 'Parecer Auditoria'];
+        } else if(setorAtual === 'balanca') {
+            cabecalhos = ['Data / Hora', 'Placa / Frota', 'Peso Bruto', 'Peso Taras', 'Peso Líquido', 'Fazenda / Origem', 'Destino / Linha'];
+        } else if(setorAtual === 'moenda') {
+            cabecalhos = ['Data / Hora', 'Equipamento', 'Vazão / Moagem', 'Extração %', 'Umidade Bagaço', 'Linha Operacional', 'Condição'];
+        } else if(setorAtual === 'caldeira') {
+            cabecalhos = ['Data / Hora', 'Caldeira', 'Pressão (bar)', 'Vazão Vapor', 'Gerador (MW)', 'Biomassa', 'Status'];
+        } else if(setorAtual === 'laboratorio') {
+            cabecalhos = ['Data / Hora', 'Amostra / Lote', 'ATR (kg/t)', 'Teor Pol %', 'Pureza %', 'Origem', 'Laudo Final'];
+        }
+
+        cabecalhos.forEach(cab => {
+            html += `<div class="excel-cell excel-header-cell">${cab}</div>`;
+        });
+
+        if (dados.length === 0) {
+            html += `<div class="empty-state">Nenhum registro encontrado.</div>`;
+        } else {
+            dados.forEach((row, index) => {
+                html += `
+                    <div class="excel-cell excel-row">${row.col1}</div>
+                    <div class="excel-cell excel-row">${row.col2}</div>
+                    <div class="excel-cell excel-row highlight-cell" id="cell-r${index}-c3">${row.col3}</div>
+                    <div class="excel-cell excel-row" id="cell-r${index}-c4">${row.col4}</div>
+                    <div class="excel-cell excel-row" id="cell-r${index}-c5">${row.col5}</div>
+                    <div class="excel-cell excel-row">${row.col6}</div>
+                    <div class="excel-cell excel-row">${row.col7}</div>
+                `;
+            });
+        }
+        grid.innerHTML = html;
+    }
+
+    // Função de Validação ao Lançar na Tabela
+    function registrarDadoExecutivo() {
+        const val1 = document.getElementById('inputCol1').value.trim();
+        const val2 = document.getElementById('inputCol2').value.trim();
+        const alertBox = document.getElementById('formAlertBox');
+
+        // Se algum dos campos estiver vazio, exibe o aviso
+        if (val1 === "" || val2 === "") {
+            alertBox.style.display = "flex";
+            setTimeout(() => {
+                alertBox.style.display = "none";
+            }, 4000);
+            return;
+        }
+
+        // Se estiver preenchido, oculta o alerta (caso estivesse visível) e procede com o lançamento
+        alertBox.style.display = "none";
+
+        const setorSelect = document.getElementById('selectSetorOrigem').value;
+        const agoraStr = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'medium' });
+
+        const novoRegistro = {
+            col1: agoraStr,
+            col2: setorSelect,
+            col3: val1,
+            col4: val2,
+            col5: 'Automático',
+            col6: 'Central CCI',
+            col7: 'Registrado'
+        };
+
+        dadosCache.unshift(novoRegistro);
+        renderizarTabela(dadosCache, modoDiaAnterior);
+
+        // Limpa os campos após o sucesso
+        document.getElementById('inputCol1').value = "";
+        document.getElementById('inputCol2').value = "";
+    }
+
+    function iniciarAtualizacaoIndependenteNumerica() {
+        const timer = setInterval(() => {
+            if (dadosCache.length === 0 || modoDiaAnterior) return;
+            const rowIndex = Math.floor(Math.random() * dadosCache.length);
+            const targetCol = Math.random() > 0.5 ? 'c3' : 'c4';
+            const cellElement = document.getElementById(`cell-r${rowIndex}-${targetCol}`);
+            
+            if (cellElement) {
+                let textoAtual = cellElement.textContent;
+                let numMatch = textoAtual.match(/[\d.,]+/);
+                if (numMatch) {
+                    let numStr = numMatch[0].replace(/\./g, '').replace(',', '.');
+                    let num = parseFloat(numStr);
+                    if (!isNaN(num)) {
+                        let variacao = (Math.random() * 2 - 1) * (num * 0.01);
+                        let novoNum = num + variacao;
+                        let sufixo = textoAtual.replace(numMatch[0], '');
+                        let formatado = novoNum > 1000 ? Math.round(novoNum).toLocaleString('pt-BR') : novoNum.toFixed(1);
+                        cellElement.textContent = formatado + sufixo;
+                        
+                        cellElement.style.backgroundColor = '#d1fae5';
+                        setTimeout(() => {
+                            cellElement.style.backgroundColor = '';
+                        }, 500);
+                    }
+                }
+            }
+        }, 3000);
+        temporizadoresCelulas.push(timer);
+    }
+
+    function mostrarGraficoSetorial(kpiId) {
+        const box = document.getElementById('chartBox');
+        box.style.display = 'block';
+    }
+
+    function fecharGrafico() {
+        const box = document.getElementById('chartBox');
+        box.style.display = 'none';
+    }
+
+    function dispararRelatorioEmail(btn) {
+        const toast = btn.nextElementSibling;
+        if(toast) {
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 2500);
+        }
+    }
+</script>
+</body>
+</html>

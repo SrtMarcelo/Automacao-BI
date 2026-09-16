@@ -1,0 +1,8 @@
+CREATE TABLE pesagens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id VARCHAR(50) NOT NULL, -- Identificador único da Empresa (ex: "empresa_a", "empresa_b")
+    id_balanca INT NOT NULL,
+    peso DECIMAL(10,2) NOT NULL,
+    data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_tenant (tenant_id) -- Índice para performance extrema nas buscas da API
+);

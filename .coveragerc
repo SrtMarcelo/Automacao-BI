@@ -1,0 +1,10 @@
+[run]
+omit =
+    test_*.py
+    tests/*
+    teste.py
+    ver.py
+    wsgi.py
+    api.py
+    config.py
+    database.py
