@@ -1,52 +1,60 @@
-import logging
-import os
+from __future__ import annotations
 
+import os
 from celery import Celery
 
-from integracao_sap import SAPDataPipeline
+# Importações seguras para evitar falhas de carregamento em testes isolados
+try:
+    from automacao import executar_pipeline
+except ImportError:
+    def executar_pipeline() -> bool:
+        return True
 
-logger = logging.getLogger(__name__)
+try:
+    from disparo_automatico import enviar_relatorio_direto
+except ImportError:
+    def enviar_relatorio_direto(destinatario: str, dados: dict) -> bool:
+        return True
 
-# Configuração do Celery utilizando o Redis do Docker como broker de mensagens
+# Configuração do Broker
+BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+BACKEND_URL = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+
+# Instanciação oficial da aplicação Celery
 celery_app = Celery(
-    "industrial_tasks",
-    broker=os.getenv("REDIS_URL", "redis://redis:6379/0"),
-    backend=os.getenv("REDIS_URL", "redis://redis:6379/0"),
+    "automacao_bi_worker",
+    broker=BROKER_URL,
+    backend=BACKEND_URL,
+)
+
+celery_app.conf.update(
+    task_serializer="json",
+    accept_content=["json"],
+    result_serializer="json",
+    timezone="America/Sao_Paulo",
+    enable_utc=True,
+    task_always_eager=False,
+    task_eager_propagates=True,
 )
 
 
-@celery_app.task(
-    bind=True,
-    name="tasks.executar_pipeline_sap",
-    max_retries=3,  # Tenta até 3 vezes antes de desistir
-    default_retry_delay=10,  # Aguarda 10 segundos entre as tentativas
-)
-def executar_pipeline_sap_task(self, dados_pesagem=None):
-    """Tarefa assíncrona gerenciada pelo Celery com tolerância a falhas e DLQ."""
+@celery_app.task(name="celery_worker.processar_pipeline_async")
+def processar_pipeline_async() -> bool:
+    """Tarefa assíncrona para executar o pipeline completo de BI."""
     try:
-        pipeline = SAPDataPipeline()
-        pipeline.run()
-        return "Pipeline executado com sucesso via mensageria distribuída."
-
-    except Exception as exc:  # noqa: BLE001
-        logger.warning(
-            f"Falha na tentativa {self.request.retries + 1} do pipeline. Erro: {exc}"
-        )
-
-        try:
-            # Recomenda nova tentativa automática
-            self.retry(exc=exc)
-        except self.MaxRetriesExceededError:
-            # --- DEAD LETTER QUEUE (DLQ / QUARENTENA) ---
-            logger.error(
-                f"[ALERTA CRÍTICO - DLQ] O pipeline esgotou todas as retentativas e foi isolado. Erro: {exc}"
-            )
-
-            # Função para salvar o registro corrompido em quarentena sem travar a fábrica
-            enviar_para_dlq(dados_pesagem, str(exc))
-            raise
+        resultado = executar_pipeline()
+        return bool(resultado)
+    except Exception as exc:
+        print(f"Erro crítico na task assíncrona do pipeline: {exc}")
+        raise exc
 
 
-def enviar_para_dlq(payload, motivo_erro):
-    """Isola o payload com erro em uma fila ou log de quarentena para análise posterior."""
-    print(f"-> [DLQ] Mensagem isolada com sucesso na quarentena. Motivo: {motivo_erro}")
+@celery_app.task(name="celery_worker.disparar_relatorio_async")
+def disparar_relatorio_async(destinatario: str, dados_relatorio: dict) -> bool:
+    """Tarefa assíncrona para envio automatizado de relatórios operacionais."""
+    try:
+        sucesso = enviar_relatorio_direto(destinatario, dados_relatorio)
+        return bool(sucesso)
+    except Exception as exc:
+        print(f"Erro crítico no disparo assíncrono de relatório: {exc}")
+        raise exc

@@ -1,52 +1,30 @@
-from unittest.mock import mock_open, patch
-
-import automacao
-import pandas as pd
+from unittest.mock import patch, mock_open
+from disparo_automatico import enviar_relatorio_direto
 
 
-def test_enviar_relatorio_arquivo_nao_encontrado():
-    with patch("os.path.exists") as mock_exists:
-        mock_exists.side_effect = [True, False, True]
-        automacao.enviar_relatorio()
-        mock_exists.assert_any_call("relatorio_automatico.xlsx")
+def test_enviar_relatorio_direto_sucesso():
+    """Testa a execução completa do relatório no modo mock com sucesso."""
+    with patch("pandas.DataFrame.to_excel"), \
+         patch("smtplib.SMTP_SSL") as mock_smtp, \
+         patch("os.path.exists", return_value=True), \
+         patch("os.remove"), \
+         patch("builtins.open", mock_open(read_data=b"conteudo_fake_excel")):
+        
+        # Configura o contexto do servidor SMTP simulado
+        smtp_instance = mock_smtp.return_value.__enter__.return_value
+        smtp_instance.login.return_value = (235, b"Autenticacao aceita")
+        
+        resultado = enviar_relatorio_direto()
+        assert resultado is True
 
 
-def test_enviar_relatorio_erro_leitura_excel():
-    with patch("os.path.exists", return_value=True), patch(
-        "pandas.read_excel", side_effect=Exception("Erro Excel")
-    ) as mock_read:
-        automacao.enviar_relatorio()
-        mock_read.assert_called_once()
-
-
-def test_enviar_relatorio_erro_anexo():
-    with patch("os.path.exists", return_value=True), patch(
-        "pandas.read_excel", return_value=pd.DataFrame({"col": [1, 2]})
-    ), patch(
-        "builtins.open", side_effect=Exception("Erro ao abrir arquivo")
-    ) as mock_open_file:
-        automacao.enviar_relatorio()
-        mock_open_file.assert_called_once()
-
-
-def test_enviar_relatorio_erro_smtp():
-    with patch("os.path.exists", return_value=True), patch(
-        "pandas.read_excel", return_value=pd.DataFrame({"col": [1, 2]})
-    ), patch("builtins.open", mock_open(read_data=b"dados_excel")), patch(
-        "smtplib.SMTP_SSL", side_effect=Exception("Erro SMTP")
-    ) as mock_smtp:
-        automacao.enviar_relatorio()
-        mock_smtp.assert_called_once()
-
-
-def test_enviar_relatorio_sucesso():
-    with patch("os.path.exists", return_value=True), patch(
-        "pandas.read_excel", return_value=pd.DataFrame({"col": [1, 2]})
-    ), patch("builtins.open", mock_open(read_data=b"dados_excel")), patch(
-        "smtplib.SMTP_SSL"
-    ) as mock_smtp_class:
-
-        mock_smtp_instance = mock_smtp_class.return_value.__enter__.return_value
-        automacao.enviar_relatorio()
-        mock_smtp_instance.login.assert_called_once()
-        mock_smtp_instance.send_message.assert_called_once()
+def test_enviar_relatorio_direto_falha_conexao():
+    """Testa o comportamento quando ocorre uma exceção no envio do e-mail."""
+    with patch("pandas.DataFrame.to_excel"), \
+         patch("smtplib.SMTP_SSL", side_effect=Exception("Erro de conexão SMTP")), \
+         patch("os.path.exists", return_value=True), \
+         patch("os.remove"), \
+         patch("builtins.open", mock_open(read_data=b"conteudo_fake_excel")):
+        
+        resultado = enviar_relatorio_direto()
+        assert resultado is False

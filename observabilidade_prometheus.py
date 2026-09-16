@@ -1,4 +1,11 @@
+from __future__ import annotations
+
+import logging
 from prometheus_client import Counter, Histogram, start_http_server
+
+# Configuração de logging estruturado
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # 1. Definindo as métricas industriais
 TOTAL_PESAGENS = Counter(
@@ -13,11 +20,17 @@ TEMPO_PROCESSAMENTO = Histogram(
 )
 
 ERROS_CRITICOS = Counter(
-    "bi_erros_criticos_total", "Total de divergências ou falhas críticas de envio"
+    "bi_erros_criticos_total", 
+    "Total de divergências ou falhas críticas de envio"
 )
 
 
-def iniciar_servidor_metricas(porta: int = 8000):
-    """Inicia o servidor HTTP do Prometheus para expor as métricas na porta 8000."""
-    start_http_server(porta)
-    print(f"📊 Servidor de métricas Prometheus rodando na porta {porta}...")
+def iniciar_servidor_metricas(porta: int = 8000) -> bool:
+    """Inicia o servidor HTTP do Prometheus para expor as métricas de forma segura."""
+    try:
+        start_http_server(porta)
+        logger.info(f"📊 Servidor de métricas Prometheus rodando na porta {porta}...")
+        return True
+    except Exception as e:
+        logger.error(f"❌ Erro ao iniciar servidor de métricas na porta {porta}: {e}")
+        return False

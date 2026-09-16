@@ -1,15 +1,29 @@
+from __future__ import annotations
+
+import logging
 import os
 import smtplib
-import sys
 from email.message import EmailMessage
+from typing import Any, Dict, Optional
 
 import pandas as pd
 import requests
 from celery import Celery
 from dotenv import load_dotenv
 
-# Importando as métricas do Prometheus
-from observabilidade_prometheus import ERROS_CRITICOS, TOTAL_PESAGENS
+# Importando as métricas do Prometheus com segurança
+try:
+    from observabilidade_prometheus import ERROS_CRITICOS, TOTAL_PESAGENS
+except ImportError:
+    # Fallback caso o módulo de métricas não esteja presente em ambiente isolado de teste
+    class DummyMetric:
+        def inc(self) -> None:
+            pass
+        def labels(self, **kwargs: Any) -> DummyMetric:
+            return self
+
+    ERROS_CRITICOS = DummyMetric()  # type: ignore
+    TOTAL_PESAGENS = DummyMetric()  # type: ignore
 
 load_dotenv()
 
@@ -18,96 +32,93 @@ celery_app = Celery(
     "automacao_bi", broker=os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 )
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 @celery_app.task(bind=True, max_retries=5, default_retry_delay=60)
-def enviar_pesagem_sap_async(self, dados_pesagem: dict):
-    """
-    Tarefa assíncrona do Celery para envio resiliente ao SAP HANA.
-    Se a rede cair ou o SAP instabilizar, o Celery tenta novamente até 5 vezes.
-    """
+def enviar_pesagem_sap_async(self, dados_pesagem: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Tarefa assíncrona do Celery para envio resiliente ao SAP HANA com tratamento de erros."""
+    if dados_pesagem is None:
+        dados_pesagem = {}
+
+    sap_url = os.getenv("SAP_API_URL", "https://seu-ambiente-sap/sap/opu/odata/...")
+    chave_acesso = dados_pesagem.get("chave_acesso", "N/A")
+
     try:
-        sap_url = os.getenv("SAP_API_URL", "https://seu-ambiente-sap/sap/opu/odata/...")
-
-        # Se for ambiente de simulação/mock
+        # Modo simulação / mock
         if "seu-ambiente-sap" in sap_url or "mock" in sap_url:
-            print(
-                f"⚠️ Modo simulação: Processando pesagem da chave {dados_pesagem.get('chave_acesso')}..."
-            )
-
-            # 📊 Incrementa métrica de sucesso (incluindo mock) no Prometheus
+            logger.warning(f"⚠️ Modo simulação: Processando pesagem da chave {chave_acesso}...")
             TOTAL_PESAGENS.labels(status="sucesso").inc()
+            return {"status": "SUCESSO_MOCK", "chave": chave_acesso}
 
-            return {
-                "status": "SUCESSO_MOCK",
-                "chave": dados_pesagem.get("chave_acesso"),
-            }
-
-        print("🔄 Enviando pesagem para API OData do SAP S/4HANA...")
+        logger.info("🔄 Enviando pesagem para API OData do SAP S/4HANA...")
         response = requests.post(
             sap_url,
             json=dados_pesagem,
-            auth=(os.getenv("SAP_USER"), os.getenv("SAP_PASSWORD")),
+            auth=(os.getenv("SAP_USER", ""), os.getenv("SAP_PASSWORD", "")),
             timeout=30,
         )
+
+        # Tratamento de erro do cliente (4xx exceto 429)
+        if 400 <= response.status_code < 500 and response.status_code != 429:
+            logger.error(f"❌ Erro cliente irreversível no SAP ({response.status_code})")
+            ERROS_CRITICOS.inc()
+            TOTAL_PESAGENS.labels(status="erro").inc()
+            response.raise_for_status()
+
         response.raise_for_status()
-
-        # 📊 Incrementa métrica de sucesso no Prometheus
         TOTAL_PESAGENS.labels(status="sucesso").inc()
-
         return {"status": "SUCESSO", "resposta": response.json()}
 
     except (
         requests.exceptions.ConnectionError,
         requests.exceptions.Timeout,
+        requests.exceptions.HTTPError,
     ) as exc:
-        print(
-            f"❌ Falha de rede/conexão com SAP. Tentativa {self.request.retries + 1}/5. Erro: {exc}"
+        status_code = getattr(getattr(exc, "response", None), "status_code", None)
+        if status_code and 400 <= status_code < 500 and status_code != 429:
+            raise exc
+
+        logger.warning(
+            f"❌ Falha de comunicação/servidor com SAP. Tentativa {self.request.retries + 1}/5. Erro: {exc}"
         )
-        # Aciona o mecanismo nativo de nova tentativa do Celery
         raise self.retry(exc=exc)
 
 
-def enviar_relatorio_direto():
+def _obter_dados_relatorio(sap_url: str) -> pd.DataFrame:
+    """Obtém os dados do relatório via API ou dados mockados de balança."""
+    if "seu-ambiente-sap" in sap_url or "mock" in sap_url:
+        logger.warning("⚠️ Modo simulação de balança ativado para o relatório.")
+        dados_mock = [
+            {"Centro": "3010", "Operacao": "Balança 01", "PesoLiquido": 45200.5, "Material": "Cana Picada", "Status": "Processado"},
+            {"Centro": "3010", "Operacao": "Balança 02", "PesoLiquido": 38900.0, "Material": "Cana Picada", "Status": "Processado"},
+        ]
+        return pd.DataFrame(dados_mock)
+
+    logger.info("📊 Consultando dados via API OData do SAP S/4HANA...")
+    response = requests.get(
+        sap_url,
+        auth=(os.getenv("SAP_USER", ""), os.getenv("SAP_PASSWORD", "")),
+        timeout=30,
+    )
+    response.raise_for_status()
+    return pd.DataFrame(response.json()["d"]["results"])
+
+
+def enviar_relatorio_direto() -> bool:
+    """Gera o relatório operacional e envia por e-mail de forma segura e resiliente."""
+    nome_arquivo = "relatorio_automatico.xlsx"
+    df: Optional[pd.DataFrame] = None
+
     try:
         sap_url = os.getenv("SAP_API_URL", "https://seu-ambiente-sap/sap/opu/odata/...")
+        df = _obter_dados_relatorio(sap_url)
+        df.to_excel(nome_arquivo, index=False)
 
-        if "seu-ambiente-sap" in sap_url or "mock" in sap_url:
-            print(
-                "⚠️ URL do SAP não configurada ou modo simulação detectado. Utilizando payload mockado de balança..."
-            )
-            dados_mock = [
-                {
-                    "Centro": "3010",
-                    "Operacao": "Balança 01",
-                    "PesoLiquido": 45200.5,
-                    "Material": "Cana Picada",
-                    "Status": "Processado",
-                },
-                {
-                    "Centro": "3010",
-                    "Operacao": "Balança 02",
-                    "PesoLiquido": 38900.0,
-                    "Material": "Cana Picada",
-                    "Status": "Processado",
-                },
-            ]
-            df = pd.DataFrame(dados_mock)
-        else:
-            print("📊 Consultando dados via API OData do SAP S/4HANA...")
-            response = requests.get(
-                sap_url,
-                auth=(os.getenv("SAP_USER"), os.getenv("SAP_PASSWORD")),
-                timeout=30,
-            )
-            response.raise_for_status()
-            df = pd.DataFrame(response.json()["d"]["results"])
-
-        df.to_excel("relatorio_automatico.xlsx", index=False)
-
-        # Configuração do e-mail
-        remetente = os.getenv("EMAIL_USER")
-        destinatario = os.getenv("EMAIL_DESTINATARIO")
-        senha_app = os.getenv("EMAIL_PASSWORD")
+        remetente = os.getenv("EMAIL_USER", "remetente@empresa.com")
+        destinatario = os.getenv("EMAIL_DESTINATARIO", "destinatario@empresa.com")
+        senha_app = os.getenv("EMAIL_PASSWORD", "senha_secreta")
 
         msg = EmailMessage()
         msg["Subject"] = "📊 Relatório Diário Automático - Indicadores Operacionais"
@@ -118,32 +129,37 @@ def enviar_relatorio_direto():
             f"Total de registros processados: {len(df)}"
         )
 
-        with open("relatorio_automatico.xlsx", "rb") as f:
+        with open(nome_arquivo, "rb") as f:
             msg.add_attachment(
                 f.read(),
                 maintype="application",
                 subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                filename="relatorio_automatico.xlsx",
+                filename=nome_arquivo,
             )
 
-        print("🚀 Conectando ao servidor SMTP para disparo...")
+        logger.info("🚀 Conectando ao servidor SMTP para disparo...")
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(remetente, senha_app)
             smtp.send_message(msg)
 
-        print("Relatório enviado com sucesso! ✅")
-
-        # 📊 Incrementa métrica de sucesso do relatório no Prometheus
+        logger.info("Relatório enviado com sucesso! ✅")
         TOTAL_PESAGENS.labels(status="sucesso").inc()
+        return True
 
-    except Exception as e:  # noqa: BLE001
-        # 🚨 Registra erro crítico e falha no Prometheus
+    except Exception as e:
         ERROS_CRITICOS.inc()
         TOTAL_PESAGENS.labels(status="erro").inc()
+        logger.error(f"❌ Erro crítico na integração ou envio: {e}")
+        return False
 
-        print(f"❌ Erro crítico na integração ou envio: {e}")
-        sys.exit(1)
+    finally:
+        if os.path.exists(nome_arquivo):
+            try:
+                os.remove(nome_arquivo)
+            except OSError:
+                pass
 
 
 if __name__ == "__main__":
-    enviar_relatorio_direto()
+    sucesso = enviar_relatorio_direto()
+    sys.exit(0 if sucesso else 1)
