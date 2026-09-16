@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from unittest.mock import mock_open, patch
-import pandas as pd
 
+import disparo_automatico
+import pandas as pd
 from automacao import enviar_relatorio
 from disparo_automatico import enviar_relatorio_direto
-import disparo_automatico
 
 
 @patch("smtplib.SMTP_SSL")

@@ -21,7 +21,7 @@ def consultar_dados_por_tenant(tenant_id: str):
 def listar_pesagens(
     x_tenant_id: str = Header(
         ..., description="Identificador da empresa extraído do token JWT"
-    )
+    ),
 ):
     """
     Endpoint protegido por Tenant ID (simulando o payload decodificado de um JWT).

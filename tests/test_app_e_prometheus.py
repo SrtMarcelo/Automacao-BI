@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from unittest.mock import patch
+
 import app
 import observabilidade_prometheus
 

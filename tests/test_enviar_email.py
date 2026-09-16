@@ -1,12 +1,12 @@
 import smtplib
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
 from enviar_email import enviar_relatorio_outlook
 
 
 def test_enviar_relatorio_sucesso():
     """Testa o envio bem-sucedido de e-mail cobrindo context managers do SMTP"""
-    with patch("smtplib.SMTP") as mock_smtp:
-        instance = mock_smtp.return_value.__enter__.return_value
+    with patch("smtplib.SMTP"):
         resultado = enviar_relatorio_outlook("teste@empresa.com", None)
         assert resultado is True
 

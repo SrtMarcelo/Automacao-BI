@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+
 from prometheus_client import Counter, Histogram, start_http_server
 
 # Configuração de logging estruturado
@@ -30,6 +31,7 @@ def iniciar_servidor_metricas(porta: int = 8000) -> bool:
         start_http_server(porta)
         logger.info(f"📊 Servidor de métricas Prometheus rodando na porta {porta}...")
         return True
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
+        logger.error(...)
         logger.error(f"❌ Erro ao iniciar servidor de métricas na porta {porta}: {e}")
         return False

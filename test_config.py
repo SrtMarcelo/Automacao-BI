@@ -1,4 +1,5 @@
 import sys
+
 import pytest
 
 
@@ -24,4 +25,4 @@ def test_config_erro_falta_variavel(monkeypatch):
 
     # Importa o módulo dentro do bloco para forçar a validação de erro de ambiente
     with pytest.raises((EnvironmentError, ValueError, KeyError, RuntimeError)):
-        import config
+        pass

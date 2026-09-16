@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import os
 from unittest.mock import MagicMock, patch
-import pytest
-import requests
 
 import app
 import disparo_automatico
+import pytest
+import requests
 
 # =====================================================================
 # 1. TESTES DE NÍVEL INDUSTRIAL PARA APP.PY (Garantindo 100% de cobertura)
@@ -140,10 +140,10 @@ def test_enviar_pesagem_sap_async_retry_servidor(mock_post) -> None:
 
 def test_bloco_finally_limpeza_com_excecao_os() -> None:
     """Testa a robustez do bloco de limpeza de arquivos temporários sob falha de I/O."""
-    with patch("os.path.exists", return_value=True), patch(
-        "os.remove", side_effect=OSError("Arquivo bloqueado por outro processo")
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("os.remove", side_effect=OSError("Arquivo bloqueado por outro processo")),
     ):
-
         # Simula o comportamento do finally presente nas rotinas de arquivos
         nome_arquivo = "relatorio_automatico.xlsx"
         if os.path.exists(nome_arquivo):

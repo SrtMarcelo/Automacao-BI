@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+
 from celery import Celery
 
 # Importações seguras para evitar falhas de carregamento em testes isolados
@@ -50,7 +51,7 @@ def processar_pipeline_async() -> bool:
         return bool(resultado)
     except Exception as exc:
         print(f"Erro crítico na task assíncrona do pipeline: {exc}")
-        raise exc
+        raise
 
 
 @celery_app.task(name="celery_worker.disparar_relatorio_async")
@@ -61,4 +62,4 @@ def disparar_relatorio_async(destinatario: str, dados_relatorio: dict) -> bool:
         return bool(sucesso)
     except Exception as exc:
         print(f"Erro crítico no disparo assíncrono de relatório: {exc}")
-        raise exc
+        raise

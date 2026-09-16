@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+
 from flask import Flask, Response, jsonify
 
 # Configuração de logging estruturado
@@ -18,7 +18,7 @@ def create_app() -> Flask:
         """Rota raiz da aplicação."""
         try:
             return jsonify({"status": "ok"}), 200
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Erro na rota home: {e}")
             return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -27,7 +27,7 @@ def create_app() -> Flask:
         """Rota de verificação de saúde da API."""
         try:
             return jsonify({"status": "healthy"}), 200
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Erro no health check: {e}")
             return jsonify({"status": "unhealthy", "error": str(e)}), 500
 
@@ -37,7 +37,7 @@ def create_app() -> Flask:
         try:
             logger.info("Iniciando geração de slides por rota HTTP.")
             return jsonify({"message": "Slides gerados com sucesso"}), 200
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Erro ao gerar slides: {e}")
             return jsonify({"error": str(e)}), 500
 

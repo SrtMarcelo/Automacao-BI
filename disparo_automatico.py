@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 import os
 import smtplib
+import sys
 from email.message import EmailMessage
-from typing import Any, Dict, Optional
+from typing import Any
 
 import pandas as pd
 import requests
@@ -85,7 +86,7 @@ def enviar_pesagem_sap_async(
     ) as exc:
         status_code = getattr(getattr(exc, "response", None), "status_code", None)
         if status_code and 400 <= status_code < 500 and status_code != 429:
-            raise exc
+            raise
 
         logger.warning(
             f"❌ Falha de comunicação/servidor com SAP. Tentativa {self.request.retries + 1}/5. Erro: {exc}"
@@ -128,7 +129,7 @@ def _obter_dados_relatorio(sap_url: str) -> pd.DataFrame:
 def enviar_relatorio_direto() -> bool:
     """Gera o relatório operacional e envia por e-mail de forma segura e resiliente."""
     nome_arquivo = "relatorio_automatico.xlsx"
-    df: Optional[pd.DataFrame] = None
+    df: pd.DataFrame | None = None
 
     try:
         sap_url = os.getenv("SAP_API_URL", "https://seu-ambiente-sap/sap/opu/odata/...")
@@ -165,7 +166,7 @@ def enviar_relatorio_direto() -> bool:
         TOTAL_PESAGENS.labels(status="sucesso").inc()
         return True
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         ERROS_CRITICOS.inc()
         TOTAL_PESAGENS.labels(status="erro").inc()
         logger.error(f"❌ Erro crítico na integração ou envio: {e}")
