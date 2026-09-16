@@ -4,6 +4,9 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def enviar_relatorio_outlook(destinatario, caminho_anexo=None):
@@ -45,6 +48,6 @@ def enviar_relatorio_outlook(destinatario, caminho_anexo=None):
         servidor.sendmail(remetente, destinatario, msg.as_string())
         servidor.quit()
         return True
-    except Exception as e:
-        print(f"Erro ao enviar e-mail: {e}")
+    except smtplib.SMTPException as e:
+        logger.error(f"Erro ao enviar e-mail via SMTP: {e}")
         return False
