@@ -19,6 +19,7 @@ except ImportError:
     class DummyMetric:
         def inc(self) -> None:
             pass
+
         def labels(self, **kwargs: Any) -> DummyMetric:
             return self
 
@@ -37,7 +38,9 @@ logger = logging.getLogger(__name__)
 
 
 @celery_app.task(bind=True, max_retries=5, default_retry_delay=60)
-def enviar_pesagem_sap_async(self, dados_pesagem: dict[str, Any] | None = None) -> dict[str, Any]:
+def enviar_pesagem_sap_async(
+    self, dados_pesagem: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Tarefa assíncrona do Celery para envio resiliente ao SAP HANA com tratamento de erros."""
     if dados_pesagem is None:
         dados_pesagem = {}
@@ -48,7 +51,9 @@ def enviar_pesagem_sap_async(self, dados_pesagem: dict[str, Any] | None = None) 
     try:
         # Modo simulação / mock
         if "seu-ambiente-sap" in sap_url or "mock" in sap_url:
-            logger.warning(f"⚠️ Modo simulação: Processando pesagem da chave {chave_acesso}...")
+            logger.warning(
+                f"⚠️ Modo simulação: Processando pesagem da chave {chave_acesso}..."
+            )
             TOTAL_PESAGENS.labels(status="sucesso").inc()
             return {"status": "SUCESSO_MOCK", "chave": chave_acesso}
 
@@ -62,7 +67,9 @@ def enviar_pesagem_sap_async(self, dados_pesagem: dict[str, Any] | None = None) 
 
         # Tratamento de erro do cliente (4xx exceto 429)
         if 400 <= response.status_code < 500 and response.status_code != 429:
-            logger.error(f"❌ Erro cliente irreversível no SAP ({response.status_code})")
+            logger.error(
+                f"❌ Erro cliente irreversível no SAP ({response.status_code})"
+            )
             ERROS_CRITICOS.inc()
             TOTAL_PESAGENS.labels(status="erro").inc()
             response.raise_for_status()
@@ -91,8 +98,20 @@ def _obter_dados_relatorio(sap_url: str) -> pd.DataFrame:
     if "seu-ambiente-sap" in sap_url or "mock" in sap_url:
         logger.warning("⚠️ Modo simulação de balança ativado para o relatório.")
         dados_mock = [
-            {"Centro": "3010", "Operacao": "Balança 01", "PesoLiquido": 45200.5, "Material": "Cana Picada", "Status": "Processado"},
-            {"Centro": "3010", "Operacao": "Balança 02", "PesoLiquido": 38900.0, "Material": "Cana Picada", "Status": "Processado"},
+            {
+                "Centro": "3010",
+                "Operacao": "Balança 01",
+                "PesoLiquido": 45200.5,
+                "Material": "Cana Picada",
+                "Status": "Processado",
+            },
+            {
+                "Centro": "3010",
+                "Operacao": "Balança 02",
+                "PesoLiquido": 38900.0,
+                "Material": "Cana Picada",
+                "Status": "Processado",
+            },
         ]
         return pd.DataFrame(dados_mock)
 

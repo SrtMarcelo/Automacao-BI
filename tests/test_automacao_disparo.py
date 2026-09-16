@@ -35,7 +35,7 @@ def test_disparo_automatico_direto(mock_smtp) -> None:
         enviar_relatorio_direto("teste@empresa.com", {"relatorio": "dados"})
     except TypeError:
         enviar_relatorio_direto()
-    
+
     mock_smtp.assert_called_once()
 
 

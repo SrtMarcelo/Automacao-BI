@@ -10,9 +10,10 @@ import agendador
 
 def test_agendador_fluxo_principal() -> None:
     """Testa o fluxo principal de inicialização do agendamento mockando o scheduler e o sleep."""
-    with patch("apscheduler.schedulers.blocking.BlockingScheduler.start") as mock_start, \
-         patch("time.sleep", return_value=None):
-        
+    with patch(
+        "apscheduler.schedulers.blocking.BlockingScheduler.start"
+    ) as mock_start, patch("time.sleep", return_value=None):
+
         # Executa a função sem gerar exceções reais de bloqueio de thread
         agendador.iniciar_agendamento()
 
@@ -22,9 +23,10 @@ def test_agendador_fluxo_principal() -> None:
 
 def test_agendador_main_bloco() -> None:
     """Testa a execução do bloco de entrada principal (__main__) do módulo agendador."""
-    with patch("apscheduler.schedulers.blocking.BlockingScheduler.start") as mock_start, \
-         patch.object(agendador, "__name__", "__main__"):
-        
+    with patch(
+        "apscheduler.schedulers.blocking.BlockingScheduler.start"
+    ) as mock_start, patch.object(agendador, "__name__", "__main__"):
+
         # Simula a execução condicional idêntica à do script principal
         if agendador.__name__ == "__main__":
             agendador.iniciar_agendamento()

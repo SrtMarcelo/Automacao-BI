@@ -7,14 +7,18 @@ from celery import Celery
 try:
     from automacao import executar_pipeline
 except ImportError:
+
     def executar_pipeline() -> bool:
         return True
+
 
 try:
     from disparo_automatico import enviar_relatorio_direto
 except ImportError:
+
     def enviar_relatorio_direto(destinatario: str, dados: dict) -> bool:
         return True
+
 
 # Configuração do Broker
 BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")

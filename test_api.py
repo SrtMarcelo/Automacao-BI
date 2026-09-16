@@ -1,4 +1,3 @@
-
 try:
     from api import app
 

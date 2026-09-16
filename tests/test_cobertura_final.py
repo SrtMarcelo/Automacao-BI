@@ -2,6 +2,7 @@ from __future__ import annotations
 import pytest
 import app as application
 
+
 def test_app_routes_coverage() -> None:
     """Simula requisições HTTP para todas as rotas do app.py para garantir 100% de cobertura do módulo."""
     client = application.app.test_client()

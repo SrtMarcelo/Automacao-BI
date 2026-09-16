@@ -2,13 +2,14 @@ from __future__ import annotations
 from unittest.mock import patch
 import app
 
+
 def test_app_factory_e_rotas() -> None:
     """Testa a criação da aplicação e todas as rotas para garantir 100% de cobertura do app.py."""
-    
+
     # Testa rotas normais
     flask_app = app.create_app()
     client = flask_app.test_client()
-    
+
     assert client.get("/").status_code == 200
     assert client.get("/health").status_code == 200
     assert client.get("/gerar-slides-turno").status_code == 200

@@ -20,8 +20,7 @@ TEMPO_PROCESSAMENTO = Histogram(
 )
 
 ERROS_CRITICOS = Counter(
-    "bi_erros_criticos_total", 
-    "Total de divergências ou falhas críticas de envio"
+    "bi_erros_criticos_total", "Total de divergências ou falhas críticas de envio"
 )
 
 

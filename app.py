@@ -8,6 +8,7 @@ from flask import Flask, Response, jsonify
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def create_app() -> Flask:
     """Fábrica de aplicação para o Flask (Application Factory)."""
     app = Flask(__name__)
@@ -41,6 +42,7 @@ def create_app() -> Flask:
             return jsonify({"error": str(e)}), 500
 
     return app
+
 
 app = create_app()
 

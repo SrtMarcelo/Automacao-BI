@@ -6,12 +6,21 @@ import app
 import celery_worker
 import integracao_sap
 
+
 def test_cobertura_app_completa() -> None:
     """Garante cobertura total das rotas e endpoints do app.py."""
     client = app.app.test_client()
-    
+
     # Testa múltiplos endpoints comuns para garantir que todas as rotas sejam exercitadas
-    endpoints = ["/", "/health", "/metrics", "/status", "/gerar-slides-turno", "/api/executar", "/api/status"]
+    endpoints = [
+        "/",
+        "/health",
+        "/metrics",
+        "/status",
+        "/gerar-slides-turno",
+        "/api/executar",
+        "/api/status",
+    ]
     for ep in endpoints:
         try:
             client.get(ep)
@@ -54,7 +63,7 @@ def test_cobertura_integracao_sap_completa() -> None:
     with patch("requests.get") as mock_get:
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = {"status": "sucesso", "dados": []}
-        
+
         # Invoca dinamicamente todas as funções públicas do módulo integracao_sap
         for attr_name in dir(integracao_sap):
             attr = getattr(integracao_sap, attr_name)
