@@ -1,27 +1,17 @@
-# Usa uma imagem oficial leve do Python
-FROM python:3.11-slim
+# Usa a imagem oficial e leve do Nginx
+FROM nginx:alpine
 
-# Criação de um usuário dedicado para evitar execução como root (Security Hardening)
-RUN useradd -u 1000 appuser && mkdir /app && chown -R appuser /app
+# Remove o arquivo de configuração padrão do Nginx
+RUN rm /etc/nginx/nginx.conf
 
-# Define o diretório de trabalho dentro do container
-WORKDIR /app
+# Copia o seu novo arquivo de configuração personalizado para dentro do container
+COPY nginx.conf /etc/nginx/nginx.conf
 
-# Instala dependências do sistema se necessário
-RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /var/lib/apt/lists/*
+# Copia o seu arquivo HTML principal (ajuste o nome se o seu arquivo se chamar diferente de index.html)
+COPY index.html /usr/share/nginx/html/index.html
 
-# Copia e instala os requisitos do projeto
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Expõe a porta 80 para acesso local
+EXPOSE 80
 
-# Copia o restante do código do projeto para o container
-COPY . .
-
-# Ajusta as permissões de todo o diretório para o usuário da aplicação
-RUN chown -R appuser:appuser /app
-
-# Alterna para o usuário não-root por segurança industrial
-USER appuser
-
-# Comando padrão para iniciar o orquestrador industrial em modo contínuo
-CMD ["python", "agendador.py"]
+# Inicia o Nginx em primeiro plano
+CMD ["nginx", "-g", "daemon off;"]
