@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException, Header
 import sqlite3
+
+from fastapi import FastAPI, Header, HTTPException
 
 app = FastAPI(title="Industrial SaaS API", version="1.0")
 

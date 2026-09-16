@@ -1,5 +1,5 @@
 import os
-import pytest
+
 import responses
 from disparo_automatico import enviar_pesagem_sap_async
 

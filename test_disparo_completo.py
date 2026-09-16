@@ -1,5 +1,5 @@
-import pytest
 from unittest.mock import patch
+
 from disparo_automatico import enviar_pesagem_sap_async
 
 

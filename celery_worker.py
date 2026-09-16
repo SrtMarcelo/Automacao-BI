@@ -1,6 +1,8 @@
-import os
 import logging
+import os
+
 from celery import Celery
+
 from integracao_sap import SAPDataPipeline
 
 logger = logging.getLogger(__name__)
@@ -26,7 +28,7 @@ def executar_pipeline_sap_task(self, dados_pesagem=None):
         pipeline.run()
         return "Pipeline executado com sucesso via mensageria distribuída."
 
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.warning(
             f"Falha na tentativa {self.request.retries + 1} do pipeline. Erro: {exc}"
         )
@@ -47,5 +49,4 @@ def executar_pipeline_sap_task(self, dados_pesagem=None):
 
 def enviar_para_dlq(payload, motivo_erro):
     """Isola o payload com erro em uma fila ou log de quarentena para análise posterior."""
-    # Aqui você pode registrar o erro em uma tabela dedicada do banco ou log seguro
     print(f"-> [DLQ] Mensagem isolada com sucesso na quarentena. Motivo: {motivo_erro}")

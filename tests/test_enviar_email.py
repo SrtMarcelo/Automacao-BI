@@ -1,6 +1,6 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from enviar_email import enviar_relatorio_outlook
-import os
 
 
 def test_enviar_relatorio_sucesso():

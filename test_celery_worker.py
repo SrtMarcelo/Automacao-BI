@@ -1,4 +1,3 @@
-import pytest
 
 
 def test_celery_worker_importacao():

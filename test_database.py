@@ -1,6 +1,8 @@
 import os
+
 import pytest
-from database import inicializar_banco, inserir_pesagem, buscar_pesagens_por_tenant
+
+from database import buscar_pesagens_por_tenant, inicializar_banco, inserir_pesagem
 
 
 @pytest.fixture(autouse=True)

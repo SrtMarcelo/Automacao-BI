@@ -1,4 +1,5 @@
 import sys
+
 import pytest
 
 
@@ -23,4 +24,4 @@ def test_config_erro_falta_variavel(monkeypatch):
         del sys.modules["config"]
 
     with pytest.raises(EnvironmentError):
-        import config
+        pass

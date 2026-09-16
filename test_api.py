@@ -1,4 +1,3 @@
-import pytest
 
 try:
     from api import app
