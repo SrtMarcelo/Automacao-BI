@@ -21,9 +21,9 @@ def configure_celery_eager_mode() -> None:
 
 def test_celery_app_initialization() -> None:
     """Valida se a aplicação Celery e suas configurações essenciais foram instanciadas corretamente."""
-    assert hasattr(celery_worker, "celery_app"), (
-        "O módulo celery_worker deve expor 'celery_app'."
-    )
+    assert hasattr(
+        celery_worker, "celery_app"
+    ), "O módulo celery_worker deve expor 'celery_app'."
     assert celery_worker.celery_app is not None
 
     conf = celery_worker.celery_app.conf
@@ -59,9 +59,9 @@ def test_celery_worker_complete_execution_and_tasks() -> None:
                             f"Task '{task_name}' executou com exceção controlada via mock: {exc}"
                         )
 
-        assert tasks_executadas >= 0, (
-            "O worker deve conter tasks válidas para varredura."
-        )
+        assert (
+            tasks_executadas >= 0
+        ), "O worker deve conter tasks válidas para varredura."
 
 
 def test_celery_tasks_execution_direct() -> None:
