@@ -33,4 +33,4 @@ jobs:
 
       - name: Executar Testes Automatizados e Verificar Cobertura
         run: |
-          pytest --cov=. --cov-report=term-missing --cov-fail-under=85 -o pythonpath="."
+          pytest -v --cov=. --cov-report=term-missing --cov-fail-under=85 -o pythonpath="."
