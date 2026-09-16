@@ -36,7 +36,7 @@ def test_registrar_divergencia_com_email(mock_getenv, mock_smtp):
 def test_disparar_alerta_falha_envio(mock_getenv, mock_smtp):
     # Simula exceção no envio de e-mail para cobrir o bloco except
     mock_getenv.side_effect = lambda key: "teste@email.com" if "EMAIL" in key else None
-    
+
     # Substituído para capturar a exceção específica tratada no código
     mock_smtp.side_effect = smtplib.SMTPException("Erro de conexão SMTP")
 

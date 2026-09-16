@@ -25,12 +25,10 @@ conexao.commit()
 setor_do_usuario = "Balanca"
 print(f"--- Consultando apenas para o setor: {setor_do_usuario} ---")
 
-cursor.execute(
-    "SELECT * FROM dados_industriais WHERE setor = ?", (setor_do_usuario,)
-)
+cursor.execute("SELECT * FROM dados_industriais WHERE setor = ?", (setor_do_usuario,))
 resultados = cursor.fetchall()
 
 for linha in resultados:
-  print(linha)
+    print(linha)
 
 conexao.close()

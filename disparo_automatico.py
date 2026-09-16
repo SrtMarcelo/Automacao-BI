@@ -33,7 +33,7 @@ def enviar_pesagem_sap_async(self, dados_pesagem: dict):
             print(
                 f"⚠️ Modo simulação: Processando pesagem da chave {dados_pesagem.get('chave_acesso')}..."
             )
-            
+
             # 📊 Incrementa métrica de sucesso (incluindo mock) no Prometheus
             TOTAL_PESAGENS.labels(status="sucesso").inc()
 

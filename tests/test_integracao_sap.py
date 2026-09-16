@@ -13,7 +13,10 @@ def notest_enviar_pesagem_sucesso_mock_http():
     os.environ["SAP_USER"] = "admin"
     os.environ["SAP_PASSWORD"] = "secret"
 
-    payload_envio = {"chave_acesso": "35260912345678000195550010000000011234567890", "peso": 45000}
+    payload_envio = {
+        "chave_acesso": "35260912345678000195550010000000011234567890",
+        "peso": 45000,
+    }
 
     # Intercepta a chamada POST do requests com o 'responses'
     responses.add(

@@ -2,23 +2,28 @@ from flask import Flask
 
 app = Flask(__name__)
 
-@app.route('/')
+
+@app.route("/")
 def home():
     return {"status": "ok"}
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app.run(debug=True)
     from flask import Flask
 
 app = Flask(__name__)
 
-@app.route('/health')
+
+@app.route("/health")
 def health_check():
     return {"status": "healthy"}, 200
 
-@app.route('/gerar-slides-turno')
+
+@app.route("/gerar-slides-turno")
 def gerar_slides_turno():
     return "Slides gerados com sucesso", 200
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app.run(debug=True)
