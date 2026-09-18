@@ -1,5 +1,5 @@
-import pytest
 import app
+import pytest
 
 
 @pytest.fixture(autouse=True)

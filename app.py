@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 import logging
 from typing import Any
+
 from flask import Flask, Response, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
