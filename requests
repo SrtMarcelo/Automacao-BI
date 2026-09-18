@@ -1,0 +1,4 @@
+import requests
+
+# Adicione o timeout=2.0 na sua requisição atual
+resposta = requests.get("https://sua-api.com/dados", timeout=2.0)

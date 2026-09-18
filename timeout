@@ -1,0 +1,15 @@
+import requests
+
+url = "https://sua-api-ou-servico.com/dados"
+
+try:
+    # Trava a requisição para estourar o limite se passar de 2 segundos
+    response = requests.get(url, timeout=2.0)
+    response.raise_for_status()
+    
+    print("Sucesso:", response.json())
+
+except requests.exceptions.Timeout:
+    print("Alerta: A requisição demorou mais de 2 segundos e foi abortada com segurança!")
+except requests.exceptions.RequestException as e:
+    print(f"Erro de conexão: {e}")
