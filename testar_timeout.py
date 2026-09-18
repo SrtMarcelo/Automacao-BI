@@ -6,6 +6,8 @@ try:
     response = requests.get("https://httpbin.org/delay/3", timeout=1.0)
     print("Sucesso:", response.status_code)
 except requests.exceptions.Timeout:
-    print("Sucesso no teste! O timeout rígido bloqueou a requisição lenta com segurança.")
+    print(
+        "Sucesso no teste! O timeout rígido bloqueou a requisição lenta com segurança."
+    )
 except Exception as e:
     print(f"Outro erro ocorreu: {e}")

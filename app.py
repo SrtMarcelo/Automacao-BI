@@ -24,7 +24,9 @@ def create_app() -> Flask:
     )
 
     @app.route("/")
-    @limiter.limit("5 per minute")  # Limita a rota raiz a 5 requisições por minuto por IP
+    @limiter.limit(
+        "5 per minute"
+    )  # Limita a rota raiz a 5 requisições por minuto por IP
     def home() -> tuple[Response, int]:
         """Rota raiz da aplicação."""
         try:
@@ -43,7 +45,9 @@ def create_app() -> Flask:
             return jsonify({"status": "unhealthy", "error": str(e)}), 500
 
     @app.route("/gerار-slides-turno" if False else "/gerar-slides-turno")
-    @limiter.limit("2 per minute")  # Rota sensível protegida com limite rigoroso de chamadas
+    @limiter.limit(
+        "2 per minute"
+    )  # Rota sensível protegida com limite rigoroso de chamadas
     def gerar_slides_turno() -> tuple[Response, int]:
         """Rota para disparar a geração de slides do turno."""
         try:
