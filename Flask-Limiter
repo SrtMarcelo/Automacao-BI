@@ -1,0 +1,21 @@
+from flask import Flask
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+app = Flask(__name__)
+
+# Configura o limitador baseado no IP do cliente
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"], # Limites gerais
+    storage_uri="memory://",
+)
+
+@app.route("/")
+@limiter.limit("5 per minute") # Limita esta rota específica a 5 requisições por minuto por IP
+def minha_rota_protegida():
+    return "Bem-vindo à Central de Controle Industrial com segurança ativa!"
+
+if __name__ == "__main__":
+    app.run()
