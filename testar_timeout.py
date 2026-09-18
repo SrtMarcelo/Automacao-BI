@@ -9,5 +9,5 @@ except requests.exceptions.Timeout:
     print(
         "Sucesso no teste! O timeout rígido bloqueou a requisição lenta com segurança."
     )
-except Exception as e:
-    print(f"Outro erro ocorreu: {e}")
+except requests.exceptions.RequestException as e:
+    print(f"Erro na requisição: {e}")
