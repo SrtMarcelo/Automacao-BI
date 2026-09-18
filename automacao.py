@@ -4,7 +4,7 @@ import smtplib
 from email.message import EmailMessage
 from logging.handlers import RotatingFileHandler
 
-import pandas as pd 
+import pandas as pd
 
 # 1. Configuração de Logging de Nível Industrial Sênior
 # Garante a criação do diretório de logs e o uso de rotação (evita estouro de disco)
