@@ -8,6 +8,7 @@ from flask_limiter.util import get_remote_address
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     """Fábrica de aplicação para o Flask."""
     app = Flask(__name__)
@@ -55,5 +56,6 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             return jsonify({"error": str(e)}), 500
 
     return app
+
 
 app = create_app()
