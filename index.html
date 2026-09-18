@@ -1,351 +1,819 @@
-function obterDataBrasilia(subtrairDias = 0) {
-        const ag = new Date();
-        if (subtrairDias > 0) {
-            ag.setDate(ag.getDate() - subtrairDias);
-        }
-        return ag.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-
-    // Função de Sanitização para prevenir XSS / Injeção via inputs HTML
-    function escaparHTML(str) {
-        if (!str) return '';
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    let setorAtual = 'geral';
-    let modoDiaAnterior = false;
-    let dadosCache = [];
-    let temporizadoresCelulas = [];
-    let temporizadorGrafico = null;
-    let logsAuditoria = []; // Array para armazenar os eventos de auditoria
-
-    window.onload = function() {
-        const dataHoje = obterDataBrasilia(0);
-        const horaStr = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-        document.getElementById('dataAtualBadge').textContent = `${dataHoje} - ${horaStr} (Brasília)`;
-        carregarDadosSetor(setorAtual);
-        adicionarLogAuditoria('Sistema', 'Inicialização', 'Painel carregado com sucesso para o setor Geral.');
-    };
-
-    function limparTemporizadores() {
-        temporizadoresCelulas.forEach(t => clearInterval(t));
-        temporizadoresCelulas = [];
-        if (temporizadorGrafico) {
-            clearInterval(temporizadorGrafico);
-            temporizadorGrafico = null;
-        }
-    }
-
-    function adicionarLogAuditoria(usuario, acao, detalhes) {
-        const timestamp = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-        logsAuditoria.unshift({
-            timestamp: escaparHTML(timestamp),
-            usuario: escaparHTML(usuario),
-            acao: escaparHTML(acao),
-            detalhes: escaparHTML(detalhes)
-        });
-        
-        // Mantém apenas os últimos 20 logs para otimizar performance
-        if (logsAuditoria.length > 20) {
-            logsAuditoria.pop();
-        }
-        
-        atualizarTabelaAuditoria();
-    }
-
-    function atualizarTabelaAuditoria() {
-        const tbody = document.getElementById('tabela-auditoria');
-        if (!tbody) return;
-
-        if (logsAuditoria.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center">Nenhum evento registrado neste turno.</td></tr>`;
-            return;
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Central de Controle Industrial - Bioenergética Aroeira</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-dark: #090d16;
+            --accent-green: #064e3b;
+            --success-color: #198754;
+            --bg-body: #f8fafc;
         }
 
-        let html = '';
-        logsAuditoria.forEach(log => {
-            html += `
-                <tr>
-                    <td>${log.timestamp}</td>
-                    <td><span class="badge bg-secondary">${log.usuario}</span></td>
-                    <td><strong>${log.acao}</strong></td>
-                    <td>${log.detalhes}</td>
-                </tr>
-            `;
-        });
-        tbody.innerHTML = html;
-    }
-
-    function mudarSetor(setor, btnElement) {
-        setorAtual = setor;
-        modoDiaAnterior = false;
-        fecharGrafico();
-        
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        if(btnElement) btnElement.classList.add('active');
-
-        if(setor === 'geral') {
-            document.getElementById('kpiTitle1').textContent = "Volume Total Processado";
-            document.getElementById('kpiValue1').textContent = "4.850.2 t";
-            document.getElementById('kpiTitle2').textContent = "Eficiência Operacional";
-            document.getElementById('kpiValue2').textContent = "94.8%";
-            document.getElementById('kpiTitle3').textContent = "Qualidade Média (ATR)";
-            document.getElementById('kpiValue3').textContent = "142.5 kg/t";
-        } else if(setor === 'balanca') {
-            document.getElementById('kpiTitle1').textContent = "Caminhões Pesados Hoje";
-            document.getElementById('kpiValue1').textContent = "142 frotas";
-            document.getElementById('kpiTitle2').textContent = "Tempo Médio de Pátio";
-            document.getElementById('kpiValue2').textContent = "18 min";
-            document.getElementById('kpiTitle3').textContent = "Peso Bruto Médio";
-            document.getElementById('kpiValue3').textContent = "48.2 t";
-        } else if(setor === 'moenda') {
-            document.getElementById('kpiTitle1').textContent = "Moagem Horária";
-            document.getElementById('kpiValue1').textContent = "540 t/h";
-            document.getElementById('kpiTitle2').textContent = "Extração de Caldo";
-            document.getElementById('kpiValue2').textContent = "96.7%";
-            document.getElementById('kpiTitle3').textContent = "Umidade Bagaço";
-            document.getElementById('kpiValue3').textContent = "48.2%";
-        } else if(setor === 'caldeira') {
-            document.getElementById('kpiTitle1').textContent = "Geração de Vapor";
-            document.getElementById('kpiValue1').textContent = "180 t/h";
-            document.getElementById('kpiTitle2').textContent = "Pressão da Caldeira";
-            document.getElementById('kpiValue2').textContent = "22.5 bar";
-            document.getElementById('kpiTitle3').textContent = "Coger. de Energia";
-            document.getElementById('kpiValue3').textContent = "42.1 MW";
-        } else if(setor === 'laboratorio') {
-            document.getElementById('kpiTitle1').textContent = "Amostras Analisadas";
-            document.getElementById('kpiValue1').textContent = "310 Laudos";
-            document.getElementById('kpiTitle2').textContent = "Teor de Sacarose (Pol)";
-            document.getElementById('kpiValue2').textContent = "16.8%";
-            document.getElementById('kpiTitle3').textContent = "Pureza Média";
-            document.getElementById('kpiValue3').textContent = "88.4%";
-        }
-
-        carregarDadosSetor(setor);
-        adicionarLogAuditoria('Operador CCI', 'Navegação de Setor', `Acessou o painel do setor: ${setor.toUpperCase()}`);
-    }
-
-    function carregarDadosSetor(setor) {
-        limparTemporizadores();
-        modoDiaAnterior = false;
-        const dataHoje = obterDataBrasilia(0);
-        document.getElementById('tituloTabela').textContent = `Relatório Dinâmico: Setor [${setor.toUpperCase()}] - Atualização em Tempo Real (${dataHoje})`;
-
-        setTimeout(() => {
-            if(setor === 'geral') {
-                dadosCache = [
-                    { col1: '15/09/2026 09:15', col2: 'Balança', col3: '48.500 kg', col4: '15.200 kg', col5: '33.300 kg', col6: 'Boa Vista', col7: 'Normal' },
-                    { col1: '15/09/2026 09:30', col2: 'Moenda', col3: '535 t/h', col4: '96.5%', col5: '48.1%', col6: 'Linha A', col7: 'Estável' },
-                    { col1: '15/09/2026 09:45', col2: 'Caldeira', col3: '21.8 bar', col4: '182 t/h', col5: '41.5 MW', col6: 'Caldeira 02', col7: 'Ideal' },
-                    { col1: '15/09/2026 10:00', col2: 'Laboratório', col3: '142.1 ATR', col4: '16.9 Pol', col5: '88.6 Pureza', col6: 'Lote 41', col7: 'Aprovado' }
-                ];
-            } else if(setor === 'balanca') {
-                dadosCache = [
-                    { col1: '15/09/2026 09:15', col2: 'KAT-8820', col3: '48.500 kg', col4: '15.200 kg', col5: '33.300 kg', col6: 'Boa Vista', col7: 'Linha Norte' },
-                    { col1: '15/09/2026 10:40', col2: 'OXY-4192', col3: '50.100 kg', col4: '16.000 kg', col5: '34.100 kg', col6: 'São Matheus', col7: 'Linha Sul' },
-                    { col1: '15/09/2026 11:55', col2: 'BRZ-3310', col3: '47.000 kg', col4: '14.800 kg', col5: '32.200 kg', col6: 'Boa Vista', col7: 'Linha Norte' }
-                ];
-            } else if(setor === 'moenda') {
-                dadosCache = [
-                    { col1: '15/09/2026 08:00', col2: 'Moenda Principal', col3: '542 t/h', col4: '96.8%', col5: '48.0%', col6: 'Conjunto 01', col7: 'Em Operação' },
-                    { col1: '15/09/2026 09:00', col2: 'Difusor', col3: '538 t/h', col4: '97.1%', col5: '47.9%', col6: 'Setor B', col7: 'Ótimo' }
-                ];
-            } else if(setor === 'caldeira') {
-                dadosCache = [
-                    { col1: '15/09/2026 08:30', col2: 'Caldeira 01', col3: '22.1 bar', col4: '92 t/h', col5: '21.0 MW', col6: 'Bagaço', col7: 'Estável' },
-                    { col1: '15/09/2026 08:30', col2: 'Caldeira 02', col3: '22.0 bar', col4: '90 t/h', col5: '21.1 MW', col6: 'Bagaço', col7: 'Estável' }
-                ];
-            } else if(setor === 'laboratorio') {
-                dadosCache = [
-                    { col1: '15/09/2026 08:10', col2: 'Am. 104', col3: '143.2 kg/t', col4: '17.0 %', col5: '89.1 %', col6: 'Boa Vista', col7: 'Liberado' },
-                    { col1: '15/09/2026 09:20', col2: 'Am. 105', col3: '141.8 kg/t', col4: '16.7 %', col5: '88.0 %', col6: 'São Matheus', col7: 'Liberado' }
-                ];
+        /* Efeito em cascata sutil e profissional na entrada do site */
+        @keyframes entradaCascata {
+            0% {
+                opacity: 0;
+                transform: translateY(-12px);
             }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
-            renderizarTabela(dadosCache, false);
-            iniciarAtualizacaoIndependenteNumerica();
-        }, 150);
-    }
+        body {
+            animation: entradaCascata 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            background-color: var(--bg-body);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #334155;
+        }
 
-    function carregarDadosDiaAnterior() {
-        limparTemporizadores();
-        modoDiaAnterior = true;
-        fecharGrafico();
+        /* Painel CCI Lateral com Gradiente Linear Preto e Verde Industrial */
+        .sidebar {
+            background: linear-gradient(180deg, #090d16 0%, #0a1f1c 55%, #022c22 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding-top: 20px;
+            border-right: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .sidebar .nav-link {
+            color: #94a3b8;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: #fff;
+            background-color: rgba(16, 185, 129, 0.15);
+            border-left: 3px solid #10b981;
+        }
+        .top-navbar {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 15px 25px;
+        }
+        .card-kpi {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, background-color 0.3s ease;
+        }
+        .card-kpi:hover {
+            transform: translateY(-3px);
+        }
+        .excel-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background-color: #cbd5e1;
+            border: 1px solid #cbd5e1;
+            font-size: 0.9rem;
+            max-height: 450px;
+            overflow-y: auto;
+        }
+        .excel-cell {
+            background-color: #ffffff;
+            padding: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .excel-header-cell {
+            background-color: #e2e8f0;
+            font-weight: bold;
+            color: #1e293b;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        .highlight-cell {
+            background-color: #f0fdf4;
+            font-weight: 600;
+            color: var(--success-color);
+        }
         
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        /* Botões Estilo 3D Corporativo com Gradiente Sutil */
+        .btn-3d-corporate {
+            background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+            border: 1px solid #cbd5e1;
+            border-bottom-color: #94a3b8;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            color: #334155;
+            font-size: 0.85rem;
+            transition: all 0.15s ease;
+        }
+        .btn-3d-corporate:hover {
+            background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+            border-color: #94a3b8;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1);
+            transform: translateY(-1px);
+            color: #0f172a;
+        }
+        .btn-3d-corporate:active {
+            transform: translateY(0);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
+            background: linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%);
+        }
 
-        const dataOntem = obterDataBrasilia(1);
-        document.getElementById('tituloTabela').textContent = `📅 Resumo Executivo Consolidado - Dia Anterior (${dataOntem}) - Todos os Setores`;
+        /* Caixa de Auditoria com Gradiente Preto e Verde Escuro */
+        .audit-box {
+            background: linear-gradient(135deg, #050505 0%, #062318 100%);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
 
-        const dadosOntemConsolidados = [
-            { col1: '14/09/2026 23:59', col2: 'Balança (Total)', col3: '145 Frotas', col4: '7.120 t Bruto', col5: '4.890 t Líquido', col6: 'Consolidado Pátio', col7: 'Fechado' },
-            { col1: '14/09/2026 23:59', col2: 'Moenda & Difusor', col3: '12.960 t/dia', col4: '96.8% Ext.', col5: '48.1% Umidade', col6: 'Linhas A e B', col7: 'Meta Atingida' },
-            { col1: '14/09/2026 23:59', col2: 'Caldeiras (Utilidades)', col3: '22.2 bar (Média)', col4: '181 t/h Vapor', col5: '41.8 MW Gerados', col6: 'Biomassa / Bagaço', col7: 'Estável' },
-            { col1: '14/09/2026 23:59', col2: 'Laboratório / PCTS', col3: '142.8 ATR Médio', col4: '16.8% Pol', col5: '88.5% Pureza', col6: '312 Laudos Totais', col7: 'Aprovado' },
-            { col1: '14/09/2026 23:59', col2: 'Gestão & Diretoria', col3: '95.2% Eficiência', col4: '0 Paradas Críticas', col5: 'Operação Contínua', col6: 'Turnos 1, 2 e 3', col7: 'Auditado' }
-        ];
+        .toast-container-custom {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+    </style>
+</head>
+<body>
 
-        renderizarTabela(dadosOntemConsolidados, true);
-        adicionarLogAuditoria('Supervisão', 'Consulta Histórica', `Visualizou o consolidado do dia anterior (${dataOntem}).`);
-    }
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar / Painel CCI -->
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3 px-3">
+                    <h5 class="text-white mb-4"><i class="fa-solid fa-industry text-success me-2"></i> CCI Industrial</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" onclick="mudarSetor('balanca', this)">
+                                <i class="fa-solid fa-scale-balanced me-2"></i> Balança & Pátio
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="mudarSetor('moenda', this)">
+                                <i class="fa-solid fa-gears me-2"></i> Moenda & Difusor
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="mudarSetor('caldeira', this)">
+                                <i class="fa-solid fa-fire me-2"></i> Caldeiras (Utilidades)
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="mudarSetor('laboratorio', this)">
+                                <i class="fa-solid fa-flask me-2"></i> Laboratório / PCTS
+                            </a>
+                        </li>
+                        <li class="nav-item mt-4">
+                            <span class="text-muted small text-uppercase px-3" style="color: #6ee7b7 !important;">Auditoria & Gestão</span>
+                        </li>
+                        <li class="nav-item mt-2">
+                            <a class="nav-link text-warning" href="#" onclick="carregarDadosDiaAnterior()">
+                                <i class="fa-solid fa-calendar-days me-2"></i> Resumo Dia Anterior
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
 
-    function renderizarTabela(dados, diaAnterior) {
-        const grid = document.getElementById('tabelaGrid');
-        let html = '';
+            <!-- Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                
+                <!-- Top Navbar -->
+                <div class="top-navbar d-flex justify-content-between align-items-center rounded shadow-sm mb-4">
+                    <div>
+                        <h4 class="mb-0 text-dark fw-bold">Centro de Controle Integrado</h4>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn btn-outline-primary btn-sm" onclick="executarSimulacaoAvancada()">
+                            <i class="fa-solid fa-bolt me-1"></i> Simular Cenário
+                        </button>
+                        <span id="relogioSistema" class="badge bg-secondary fs-6">--:--:--</span>
+                    </div>
+                </div>
 
-        let cabecalhos = ['Data / Hora', 'Setor / Identificação', 'Métrica 1', 'Métrica 2', 'Métrica 3', 'Origem / Destino', 'Status Executivo'];
+                <!-- KPIs Cards com Atualização em Tempo Real -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card card-kpi p-3 bg-white border-start border-primary border-4" id="kpiCard1">
+                            <span class="text-muted small" id="kpiTitle1">Moagem Acumulada</span>
+                            <h3 class="fw-bold mt-1 text-dark" id="kpiValue1">4.850,2 t</h3>
+                            <small class="text-success"><i class="fa-solid fa-arrow-up"></i> +2.4% vs meta horária</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card card-kpi p-3 bg-white border-start border-success border-4" id="kpiCard2">
+                            <span class="text-muted small" id="kpiTitle2">Eficiência Operacional</span>
+                            <h3 class="fw-bold mt-1 text-dark" id="kpiValue2">93.0%</h3>
+                            <small class="text-success"><i class="fa-solid fa-circle-check"></i> Dentro dos parâmetros</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card card-kpi p-3 bg-white border-start border-warning border-4" id="kpiCard3">
+                            <span class="text-muted small" id="kpiTitle3">Qualidade Média (ATR)</span>
+                            <h3 class="fw-bold mt-1 text-dark" id="kpiValue3">142,5 kg/t</h3>
+                            <small class="text-muted">Parâmetro de Matéria-Prima</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Painel de Gráficos (Oculto Inicialmente) -->
+                <div class="card border-0 shadow-sm mb-4 p-3" id="chartBox" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0 text-primary"><i class="fa-solid fa-chart-line me-2"></i> Análise Gráfica Setorial</h5>
+                        <button class="btn-close" onclick="fecharGrafico()"></button>
+                    </div>
+                    <div class="p-4 bg-light rounded text-center text-muted">
+                        [ Gráfico de Tendência Operacional em Tempo Real Ativo ]
+                    </div>
+                </div>
+
+                <!-- Painel de Lançamento de Dados Manuais -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 text-dark"><i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Lançamento Operacional Rápido</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="formAlertBox" class="alert mb-3" style="display: none;"></div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label small text-muted">Setor Destino</label>
+                                <select id="selectSetorOrigem" class="form-select form-select-sm">
+                                    <option value="Balança">Balança</option>
+                                    <option value="Moenda">Moenda</option>
+                                    <option value="Caldeira">Caldeira</option>
+                                    <option value="Laboratório">Laboratório</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted">Métrica Principal</label>
+                                <input type="text" id="inputCol1" class="form-control form-control-sm" placeholder="Ex: 150.5">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted">Indicador / Descrição</label>
+                                <input type="text" id="inputCol2" class="form-control form-control-sm" placeholder="Ex: Lote 42">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-primary btn-sm w-100" onclick="registrarDadoExecutivo()">
+                                    <i class="fa-solid fa-plus me-1"></i> Lançar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid de Dados Estilo Excel -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h5 class="mb-0 text-dark" id="tituloTabela"><i class="fa-solid fa-table me-2 text-primary"></i> Visão Consolidada - Balança & Pátio</h5>
+                        <!-- Botões 3D Corporativos -->
+                        <div class="btn-group btn-group-sm flex-wrap">
+                            <button class="btn btn-3d-corporate" onclick="exportarParaExcel()"><i class="fa-solid fa-file-excel me-1 text-success"></i> Excel</button>
+                            <button class="btn btn-3d-corporate" onclick="exportarParaWord()"><i class="fa-solid fa-file-word me-1 text-primary"></i> Word</button>
+                            <button class="btn btn-3d-corporate" onclick="exportarParaPowerPoint()"><i class="fa-solid fa-file-powerpoint me-1 text-danger"></i> PowerPoint</button>
+                            <button class="btn btn-3d-corporate" onclick="exportarParaPowerBI()"><i class="fa-solid fa-chart-pie me-1 text-warning"></i> Power BI</button>
+                            <button class="btn btn-3d-corporate" onclick="enviarParaOutlook(this)"><i class="fa-solid fa-envelope me-1 text-info"></i> Outlook</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="excel-grid" id="tabelaGrid">
+                            <!-- Preenchido via JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Auditoria e Logs com Gradiente Preto e Verde -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-2">
+                        <span class="small fw-bold text-muted"><i class="fa-solid fa-shield-halved me-1"></i> Log de Auditoria & Segurança CCI</span>
+                    </div>
+                    <div class="card-body audit-box p-3 rounded-bottom font-monospace" style="font-size: 0.8rem; max-height: 120px; overflow-y: auto;" id="auditLogBox">
+                        <div>[12:00:00] [Sistema] Central de Controle Industrial iniciada com sucesso!</div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast Feedback Flutuante -->
+    <div class="toast-container-custom">
+        <div id="toastEnvio" class="toast align-items-center text-white bg-success border-0 p-2 shadow" role="alert" style="display: none;">
+            Ação executada com sucesso!
+        </div>
+    </div>
+
+    <!-- Scripts Bootstrap e Lógica da Aplicação -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let setorAtual = 'balanca';
+        let modoDiaAnterior = false;
         
-        if (diaAnterior) {
-            cabecalhos = ['Data Fechamento', 'Setor Analisado', 'Indicador Principal', 'Indicador Secundário', 'Indicador Terciário', 'Escopo / Origem', 'Parecer Auditoria'];
-        } else if(setorAtual === 'balanca') {
-            cabecalhos = ['Data / Hora', 'Placa / Frota', 'Peso Bruto', 'Peso Taras', 'Peso Líquido', 'Fazenda / Origem', 'Destino / Linha'];
-        } else if(setorAtual === 'moenda') {
-            cabecalhos = ['Data / Hora', 'Equipamento', 'Vazão / Moagem', 'Extração %', 'Umidade Bagaço', 'Linha Operacional', 'Condição'];
-        } else if(setorAtual === 'caldeira') {
-            cabecalhos = ['Data / Hora', 'Caldeira', 'Pressão (bar)', 'Vazão Vapor', 'Gerador (MW)', 'Biomassa', 'Status'];
-        } else if(setorAtual === 'laboratorio') {
-            cabecalhos = ['Data / Hora', 'Amostra / Lote', 'ATR (kg/t)', 'Teor Pol %', 'Pureza %', 'Origem', 'Laudo Final'];
-        }
-
-        cabecalhos.forEach(cab => {
-            html += `<div class="excel-cell excel-header-cell">${escaparHTML(cab)}</div>`;
-        });
-
-        if (dados.length === 0) {
-            html += `<div class="empty-state" style="grid-column: span 7; text-align: center; padding: 20px;">Nenhum registro encontrado.</div>`;
-        } else {
-            dados.forEach((row, index) => {
-                html += `
-                    <div class="excel-cell excel-row">${escaparHTML(row.col1)}</div>
-                    <div class="excel-cell excel-row">${escaparHTML(row.col2)}</div>
-                    <div class="excel-cell excel-row highlight-cell" id="cell-r${index}-c3">${escaparHTML(row.col3)}</div>
-                    <div class="excel-cell excel-row" id="cell-r${index}-c4">${escaparHTML(row.col4)}</div>
-                    <div class="excel-cell excel-row" id="cell-r${index}-c5">${escaparHTML(row.col5)}</div>
-                    <div class="excel-cell excel-row">${escaparHTML(row.col6)}</div>
-                    <div class="excel-cell excel-row">${escaparHTML(row.col7)}</div>
-                `;
-            });
-        }
-        grid.innerHTML = html;
-    }
-
-    // Função de Validação Rigorosa de Entrada (Frontend Security & Sanitization)
-    function registrarDadoExecutivo() {
-        const inputCol1El = document.getElementById('inputCol1');
-        const inputCol2El = document.getElementById('inputCol2');
-        const alertBox = document.getElementById('formAlertBox');
-
-        const val1Raw = inputCol1El.value.trim();
-        const val2Raw = inputCol2El.value.trim();
-
-        // 1. Validação básica de campos vazios
-        if (val1Raw === "" || val2Raw === "") {
-            alertBox.style.display = "flex";
-            setTimeout(() => {
-                alertBox.style.display = "none";
-            }, 4000);
-            return;
-        }
-
-        // 2. Validação numérica rigorosa do primeiro campo
-        const numCleanStr = val1Raw.replace(/\./g, '').replace(',', '.');
-        const numeroValidado = parseFloat(numCleanStr);
-
-        if (isNaN(numeroValidado) || numeroValidado <= 0) {
-            alertBox.textContent = "⚠️ Atenção: O valor principal (Métrica) deve ser um número válido maior do que zero.";
-            alertBox.style.display = "flex";
-            inputCol1El.focus();
-            setTimeout(() => {
-                alertBox.style.display = "none";
-                alertBox.textContent = "⚠️ Atenção: Por favor, preencha todos os campos obrigatórios corretamente antes de lançar na tabela.";
-            }, 4000);
-            return;
-        }
-
-        // 3. Sanitização contra XSS
-        const val1Seguro = escaparHTML(val1Raw);
-        const val2Seguro = escaparHTML(val2Raw);
-
-        alertBox.style.display = "none";
-
-        const setorSelect = document.getElementById('selectSetorOrigem').value;
-        const agoraStr = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'medium' });
-
-        const novoRegistro = {
-            col1: agoraStr,
-            col2: escaparHTML(setorSelect),
-            col3: val1Seguro,
-            col4: val2Seguro,
-            col5: 'Automático',
-            col6: 'Central CCI',
-            col7: 'Registrado'
+        // Dicionário de cache estritamente isolado por setor para impedir mistura de dados ou unidades
+        let dadosPorSetor = {
+            balanca: [
+                { col1: '17/09/2026 12:00', col2: 'Frota A-102', col3: '48.200 kg', col4: '14.100 kg', col5: '34.100 kg', col6: 'Fazenda Santa Rita', col7: 'Linha 01' },
+                { col1: '17/09/2026 11:55', col2: 'Frota B-205', col3: '51.000 kg', col4: '15.200 kg', col5: '35.800 kg', col6: 'Fazenda Boa Vista', col7: 'Linha 02' },
+                { col1: '17/09/2026 11:50', col2: 'Frota C-310', col3: '45.900 kg', col4: '13.800 kg', col5: '32.100 kg', col6: 'São João da Mata', col7: 'Linha 01' }
+            ],
+            moenda: [
+                { col1: '17/09/2026 12:00', col2: 'Moenda 01', col3: '540 t/h', col4: '96.8%', col5: '48.1%', col6: 'Linha Principal', col7: 'Normal' },
+                { col1: '17/09/2026 11:55', col2: 'Difusor', col3: '535 t/h', col4: '96.5%', col5: '48.5%', col6: 'Linha Principal', col7: 'Normal' }
+            ],
+            caldeira: [
+                { col1: '17/09/2026 12:00', col2: 'Caldeira 01', col3: '22.2 bar', col4: '90 t/h', col5: '20.8 MW', col6: 'Biomassa', col7: 'Estável' },
+                { col1: '17/09/2026 12:00', col2: 'Caldeira 02', col3: '22.0 bar', col4: '91 t/h', col5: '21.0 MW', col6: 'Biomassa', col7: 'Estável' }
+            ],
+            laboratorio: [
+                { col1: '17/09/2026 12:00', col2: 'Lote 301', col3: '142.8 kg/t', col4: '16.8%', col5: '88.5%', col6: 'Fazenda Santa Rita', col7: 'Aprovado' }
+            ]
         };
 
-        dadosCache.unshift(novoRegistro);
-        renderizarTabela(dadosCache, modoDiaAnterior);
+        let temporizadoresCelulas = [];
+        let timerKpisTempoReal = null;
 
-        // Adiciona o evento na Trilha de Auditoria
-        adicionarLogAuditoria('Operador CCI', 'Lançamento Manual', `Setor: ${setorSelect} | Métrica: ${val1Seguro}`);
+        function escaparHTML(str) {
+            return String(str).replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
 
-        // Limpa os campos após o sucesso
-        inputCol1El.value = "";
-        inputCol2El.value = "";
-    }
+        function obterDataBrasilia(diasAtras = 0) {
+            const data = new Date();
+            data.setDate(data.getDate() - diasAtras);
+            return data.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+        }
 
-    function iniciarAtualizacaoIndependenteNumerica() {
-        const timer = setInterval(() => {
-            if (dadosCache.length === 0 || modoDiaAnterior) return;
-            const rowIndex = Math.floor(Math.random() * dadosCache.length);
-            const targetCol = Math.random() > 0.5 ? 'c3' : 'c4';
-            const cellElement = document.getElementById(`cell-r${rowIndex}-${targetCol}`);
+        function limparTemporizadores() {
+            temporizadoresCelulas.forEach(t => clearInterval(t));
+            temporizadoresCelulas = [];
+            if(timerKpisTempoReal) {
+                clearInterval(timerKpisTempoReal);
+                timerKpisTempoReal = null;
+            }
+        }
+
+        function adicionarLogAuditoria(modulo, acao, detalhe) {
+            const box = document.getElementById('auditLogBox');
+            if(box) {
+                const hora = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+                box.innerHTML += `<div>[${hora}] [${modulo}] [${acao}] ${detalhe}</div>`;
+                box.scrollTop = box.scrollHeight;
+            }
+        }
+
+        // Relógio em tempo real
+        setInterval(() => {
+            const relogio = document.getElementById('relogioSistema');
+            if(relogio) {
+                relogio.textContent = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+            }
+        }, 1000);
+
+        // Motor de atualização em tempo real para os KPIs de todos os setores
+        function iniciarAtualizacaoKpisTempoReal() {
+            if(timerKpisTempoReal) clearInterval(timerKpisTempoReal);
+            timerKpisTempoReal = setInterval(() => {
+                if(modoDiaAnterior) return;
+
+                const valEl1 = document.getElementById('kpiValue1');
+                const valEl2 = document.getElementById('kpiValue2');
+                const valEl3 = document.getElementById('kpiValue3');
+                
+                if(!valEl1 || !valEl2 || !valEl3) return;
+
+                if(setorAtual === 'balanca') {
+                    let base = 4850.2 + (Math.random() * 10 - 5);
+                    valEl1.textContent = base.toFixed(1).replace('.', ',') + ' t';
+                    let ef = 93.0 + (Math.random() * 0.8 - 0.4);
+                    valEl2.textContent = ef.toFixed(1).replace('.', ',') + '%';
+                    let atr = 142.5 + (Math.random() * 0.6 - 0.3);
+                    valEl3.textContent = atr.toFixed(1).replace('.', ',') + ' kg/t';
+                } else if(setorAtual === 'moenda') {
+                    let vazao = 540 + Math.floor(Math.random() * 8 - 4);
+                    valEl1.textContent = vazao + ' t/h';
+                    let extracao = 96.8 + (Math.random() * 0.4 - 0.2);
+                    valEl2.textContent = extracao.toFixed(1).replace('.', ',') + '%';
+                    let umidade = 48.1 + (Math.random() * 0.4 - 0.2);
+                    valEl3.textContent = umidade.toFixed(1).replace('.', ',') + '%';
+                } else if(setorAtual === 'caldeira') {
+                    let pressao = 22.2 + (Math.random() * 0.4 - 0.2);
+                    valEl1.textContent = pressao.toFixed(1).replace('.', ',') + ' bar';
+                    let vapor = 181 + Math.floor(Math.random() * 6 - 3);
+                    valEl2.textContent = vapor + ' t/h';
+                    let mw = 41.8 + (Math.random() * 0.6 - 0.3);
+                    valEl3.textContent = mw.toFixed(1).replace('.', ',') + ' MW';
+                } else if(setorAtual === 'laboratorio') {
+                    let atrVal = 142.8 + (Math.random() * 0.4 - 0.2);
+                    valEl1.textContent = atrVal.toFixed(1).replace('.', ',') + ' kg/t';
+                    let pol = 16.8 + (Math.random() * 0.2 - 0.1);
+                    valEl2.textContent = pol.toFixed(1).replace('.', ',') + '%';
+                    let pureza = 88.5 + (Math.random() * 0.4 - 0.2);
+                    valEl3.textContent = pureza.toFixed(1).replace('.', ',') + '%';
+                }
+
+                [document.getElementById('kpiCard1'), document.getElementById('kpiCard2'), document.getElementById('kpiCard3')].forEach(card => {
+                    if(card) {
+                        card.style.backgroundColor = '#f0fdf4';
+                        setTimeout(() => { card.style.backgroundColor = '#ffffff'; }, 400);
+                    }
+                });
+            }, 3500);
+        }
+
+        function mudarSetor(novoSetor, elementoLink) {
+            limparTemporizadores();
+            modoDiaAnterior = false;
+            fecharGrafico();
+            setorAtual = novoSetor;
+
+            document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+            if(elementoLink) elementoLink.classList.add('active');
+
+            if(novoSetor === 'balanca') {
+                document.getElementById('tituloTabela').innerHTML = '<i class="fa-solid fa-table me-2 text-primary"></i> Visão Consolidada - Balança & Pátio';
+                document.getElementById('kpiTitle1').textContent = 'Moagem Acumulada';
+                document.getElementById('kpiValue1').textContent = '4.850,2 t';
+                document.getElementById('kpiTitle2').textContent = 'Eficiência Operacional';
+                document.getElementById('kpiValue2').textContent = '93.0%';
+                document.getElementById('kpiTitle3').textContent = 'Qualidade Média (ATR)';
+                document.getElementById('kpiValue3').textContent = '142,5 kg/t';
+            } else if(novoSetor === 'moenda') {
+                document.getElementById('tituloTabela').innerHTML = '<i class="fa-solid fa-table me-2 text-primary"></i> Visão Consolidada - Moenda & Difusor';
+                document.getElementById('kpiTitle1').textContent = 'Vazão Horária';
+                document.getElementById('kpiValue1').textContent = '540 t/h';
+                document.getElementById('kpiTitle2').textContent = 'Extração Sucrose';
+                document.getElementById('kpiValue2').textContent = '96.8%';
+                document.getElementById('kpiTitle3').textContent = 'Umidade Bagaço';
+                document.getElementById('kpiValue3').textContent = '48.1%';
+            } else if(novoSetor === 'caldeira') {
+                document.getElementById('tituloTabela').innerHTML = '<i class="fa-solid fa-table me-2 text-primary"></i> Visão Consolidada - Caldeiras (Utilidades)';
+                document.getElementById('kpiTitle1').textContent = 'Pressão Média';
+                document.getElementById('kpiValue1').textContent = '22.2 bar';
+                document.getElementById('kpiTitle2').textContent = 'Vazão de Vapor';
+                document.getElementById('kpiValue2').textContent = '181 t/h';
+                document.getElementById('kpiTitle3').textContent = 'Geração Energia';
+                document.getElementById('kpiValue3').textContent = '41.8 MW';
+            } else if(novoSetor === 'laboratorio') {
+                document.getElementById('tituloTabela').innerHTML = '<i class="fa-solid fa-table me-2 text-primary"></i> Visão Consolidada - Laboratório / PCTS';
+                document.getElementById('kpiTitle1').textContent = 'ATR Médio';
+                document.getElementById('kpiValue1').textContent = '142.8 kg/t';
+                document.getElementById('kpiTitle2').textContent = 'Teor de Pol';
+                document.getElementById('kpiValue2').textContent = '16.8%';
+                document.getElementById('kpiTitle3').textContent = 'Pureza Média';
+                document.getElementById('kpiValue3').textContent = '88.5%';
+            }
+
+            renderizarTabela(dadosPorSetor[setorAtual], false);
+            iniciarAtualizacaoIndependenteNumerica();
+            iniciarAtualizacaoKpisTempoReal();
+            adicionarLogAuditoria('Navegação', 'Troca de Setor', `Acessou o setor: ${novoSetor.toUpperCase()}`);
+        }
+
+        function carregarDadosDiaAnterior() {
+            limparTemporizadores();
+            modoDiaAnterior = true;
+            fecharGrafico();
             
-            if (cellElement) {
-                let textoAtual = cellElement.textContent;
-                let numMatch = textoAtual.match(/[\d.,]+/);
-                if (numMatch) {
-                    let numStr = numMatch[0].replace(/\./g, '').replace(',', '.');
-                    let num = parseFloat(numStr);
-                    if (!isNaN(num)) {
-                        let variacao = (Math.random() * 2 - 1) * (num * 0.01);
-                        let novoNum = num + variacao;
-                        let sufixo = textoAtual.replace(numMatch[0], '');
-                        let formatado = novoNum > 1000 ? Math.round(novoNum).toLocaleString('pt-BR') : novoNum.toFixed(1);
-                        cellElement.textContent = formatado + sufixo;
-                        
-                        cellElement.style.backgroundColor = '#d1fae5';
-                        setTimeout(() => {
-                            cellElement.style.backgroundColor = '';
-                        }, 500);
+            document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+
+            const dataOntem = obterDataBrasilia(1);
+            document.getElementById('tituloTabela').innerHTML = `<i class="fa-solid fa-table me-2 text-primary"></i> Resumo Executivo Consolidado - Dia Anterior (${dataOntem}) - Todos os Setores`;
+
+            const dadosOntemConsolidados = [
+                { col1: '16/09/2026 23:59', col2: 'Balança (Total)', col3: '145 Frotas', col4: '7.120 t Bruto', col5: '4.890 t Líquido', col6: 'Consolidado Pátio', col7: 'Fechado' },
+                { col1: '16/09/2026 23:59', col2: 'Moenda & Difusor', col3: '12.960 t/dia', col4: '96.8% Ext.', col5: '48.1% Umidade', col6: 'Linhas A e B', col7: 'Meta Atingida' },
+                { col1: '16/09/2026 23:59', col2: 'Caldeiras (Utilidades)', col3: '22.2 bar (Média)', col4: '181 t/h Vapor', col5: '41.8 MW Gerados', col6: 'Biomassa / Bagaço', col7: 'Estável' },
+                { col1: '16/09/2026 23:59', col2: 'Laboratório / PCTS', col3: '142.8 ATR Médio', col4: '16.8% Pol', col5: '88.5% Pureza', col6: '312 Laudos Totais', col7: 'Aprovado' },
+                { col1: '16/09/2026 23:59', col2: 'Gestão & Diretoria', col3: '95.2% Eficiência', col4: '0 Paradas Críticas', col5: 'Operação Contínua', col6: 'Turnos 1, 2 e 3', col7: 'Auditado' }
+            ];
+
+            renderizarTabela(dadosOntemConsolidados, true);
+            adicionarLogAuditoria('Supervisão', 'Consulta Histórica', `Visualizou o consolidado do dia anterior (${dataOntem}).`);
+        }
+
+        function renderizarTabela(dados, diaAnterior) {
+            const grid = document.getElementById('tabelaGrid');
+            let html = '';
+
+            let cabecalhos = ['Data / Hora', 'Setor / Identificação', 'Métrica 1', 'Métrica 2', 'Métrica 3', 'Origem / Destino', 'Status Executivo'];
+            
+            if (diaAnterior) {
+                cabecalhos = ['Data Fechamento', 'Setor Analisado', 'Indicador Principal', 'Indicador Secundário', 'Indicador Terciário', 'Escopo / Origem', 'Parecer Auditoria'];
+            } else if(setorAtual === 'balanca') {
+                cabecalhos = ['Data / Hora', 'Placa / Frota', 'Peso Bruto', 'Peso Taras', 'Peso Líquido', 'Fazenda / Origem', 'Destino / Linha'];
+            } else if(setorAtual === 'moenda') {
+                cabecalhos = ['Data / Hora', 'Equipamento', 'Vazão / Moagem', 'Extração %', 'Umidade Bagaço', 'Linha Operacional', 'Condição'];
+            } else if(setorAtual === 'caldeira') {
+                cabecalhos = ['Data / Hora', 'Caldeira', 'Pressão (bar)', 'Vazão Vapor', 'Gerador (MW)', 'Biomassa', 'Status'];
+            } else if(setorAtual === 'laboratorio') {
+                cabecalhos = ['Data / Hora', 'Amostra / Lote', 'ATR (kg/t)', 'Teor Pol %', 'Pureza %', 'Origem', 'Laudo Final'];
+            }
+
+            cabecalhos.forEach(cab => {
+                html += `<div class="excel-cell excel-header-cell">${escaparHTML(cab)}</div>`;
+            });
+
+            if (dados.length === 0) {
+                html += `<div class="empty-state" style="grid-column: span 7; text-align: center; padding: 20px;">Nenhum registro encontrado.</div>`;
+            } else {
+                dados.forEach((row, index) => {
+                    html += `
+                        <div class="excel-cell excel-row">${escaparHTML(row.col1)}</div>
+                        <div class="excel-cell excel-row">${escaparHTML(row.col2)}</div>
+                        <div class="excel-cell excel-row highlight-cell" id="cell-r${index}-c3">${escaparHTML(row.col3)}</div>
+                        <div class="excel-cell excel-row" id="cell-r${index}-c4">${escaparHTML(row.col4)}</div>
+                        <div class="excel-cell excel-row" id="cell-r${index}-c5">${escaparHTML(row.col5)}</div>
+                        <div class="excel-cell excel-row">${escaparHTML(row.col6)}</div>
+                        <div class="excel-cell excel-row">${escaparHTML(row.col7)}</div>
+                    `;
+                });
+            }
+            grid.innerHTML = html;
+        }
+
+        function mostrarToastFeedback(mensagem) {
+            const toast = document.getElementById('toastEnvio');
+            if(toast) {
+                toast.textContent = mensagem;
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function exportarParaWord() {
+            const dataHora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+            let conteudoWord = `======================================================================\n` +
+                                `CENTRO DE CONTROLE INTEGRADO - \n` +
+                                `RELATÓRIO EXECUTIVO OPERACIONAL (WORD)\n` +
+                                `======================================================================\n\n` +
+                                `SETOR ANALISADO: ${setorAtual.toUpperCase()}\n` +
+                                `DATA / HORA DE EMISSÃO: ${dataHora}\n\n` +
+                                `----------------------------------------------------------------------\n` +
+                                `INDICADORES PRINCIPAIS (KPIs):\n` +
+                                `----------------------------------------------------------------------\n` +
+                                `* ${document.getElementById('kpiTitle1').textContent}: ${document.getElementById('kpiValue1').textContent}\n` +
+                                `* ${document.getElementById('kpiTitle2').textContent}: ${document.getElementById('kpiValue2').textContent}\n` +
+                                `* ${document.getElementById('kpiTitle3').textContent}: ${document.getElementById('kpiValue3').textContent}\n\n` +
+                                `----------------------------------------------------------------------\n` +
+                                `STATUS DA OPERAÇÃO E AUDITORIA:\n` +
+                                `----------------------------------------------------------------------\n` +
+                                `* Condição Geral: Estável / Operando dentro dos limites nominais.\n` +
+                                `* Auditoria: Registrada e validada pelo Centro de Controle Integrado.\n` +
+                                `* Unidade Industrial: Bioenergética Aroeira - Tupaciguara/MG.\n\n` +
+                                `======================================================================\n` +
+                                `Instrução: Copie o conteúdo acima e cole diretamente no seu documento Word.\n`;
+
+            const blob = new Blob(['\ufeff' + conteudoWord], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Relatorio_Word_${setorAtual.toUpperCase()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            mostrarToastFeedback("Relatório Word Gerado!");
+            adicionarLogAuditoria('Gestão', 'Exportação Word', `Relatório executivo estruturado gerado (${setorAtual}).`);
+        }
+
+        function exportarParaExcel() {
+            let conteudoExcel = `\uFEFFData / Hora\tSetor / Identificação\tMétrica 1\tMétrica 2\tMétrica 3\tOrigem / Destino\tStatus Executivo\n`;
+            let datasetAtual = modoDiaAnterior ? [] : dadosPorSetor[setorAtual];
+            datasetAtual.forEach(row => {
+                conteudoExcel += `${row.col1}\t${row.col2}\t${row.col3}\t${row.col4}\t${row.col5}\t${row.col6}\t${row.col7}\n`;
+            });
+
+            const blob = new Blob([conteudoExcel], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Relatorio_Excel_${setorAtual.toUpperCase()}.xls`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            mostrarToastFeedback("Gerado Excel!");
+            adicionarLogAuditoria('Gestão', 'Exportação Excel', `Relatório exportado para o Excel (${setorAtual}).`);
+        }
+
+        function exportarParaPowerBI() {
+            mostrarToastFeedback("Sincronizado com Power BI!");
+            adicionarLogAuditoria('Power BI Adapter', 'Sincronização de Dataset', `Dataset analítico atualizado para o setor ${setorAtual}.`);
+        }
+
+        function exportarParaPowerPoint() {
+            const dataHora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+            let conteudoPPT = `======================================================================\n` +
+                                `CENTRO DE CONTROLE INTEGRADO - BIOENERGÉTICA AROEIRA\n` +
+                                `RESUMO EXECUTIVO PARA APRESENTAÇÃO (POWERPOINT)\n` +
+                                `======================================================================\n\n` +
+                                `SETOR ANALISADO: ${setorAtual.toUpperCase()}\n` +
+                                `DATA / HORA DE EMISSÃO: ${dataHora}\n\n` +
+                                `----------------------------------------------------------------------\n` +
+                                `SLIDE 1: INDICADORES PRINCIPAIS (KPIs)\n` +
+                                `----------------------------------------------------------------------\n` +
+                                `* ${document.getElementById('kpiTitle1').textContent}: ${document.getElementById('kpiValue1').textContent}\n` +
+                                `* ${document.getElementById('kpiTitle2').textContent}: ${document.getElementById('kpiValue2').textContent}\n` +
+                                `* ${document.getElementById('kpiTitle3').textContent}: ${document.getElementById('kpiValue3').textContent}\n\n` +
+                                `----------------------------------------------------------------------\n` +
+                                `SLIDE 2: STATUS OPERACIONAL E AUDITORIA\n` +
+                                `----------------------------------------------------------------------\n` +
+                                `* Status da Operação: Estável / Operando dentro dos limites nominais.\n` +
+                                `* Nível de Auditoria: Validado pelo Centro de Controle Integrado (CCI).\n` +
+                                `* Unidade: Bioenergética Aroeira - Tupaciguara/MG.\n\n` +
+                                `======================================================================\n` +
+                                `Instrução: Copie os tópicos acima e cole diretamente nos slides de sua\n` +
+                                `apresentação executiva.\n`;
+
+            const blob = new Blob(['\ufeff' + conteudoPPT], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Bioaroeira_Slides_PowerPoint_${setorAtual.toUpperCase()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            mostrarToastFeedback("Roteiro de Slides Gerado com Sucesso!");
+            adicionarLogAuditoria('PowerPoint Adapter', 'Exportação de Slides', `Roteiro executivo estruturado gerado (${setorAtual}).`);
+        }
+
+        function enviarParaOutlook(btn) {
+            const assunto = encodeURIComponent(`Relatório Executivo CCI - Bioenergética Aroeira (${setorAtual.toUpperCase()})`);
+            const corpo = encodeURIComponent(`Olá,\n\nSegue o resumo operacional do setor ${setorAtual.toUpperCase()}:\n` +
+                          `- ${document.getElementById('kpiTitle1').textContent}: ${document.getElementById('kpiValue1').textContent}\n` +
+                          `- ${document.getElementById('kpiTitle2').textContent}: ${document.getElementById('kpiValue2').textContent}\n` +
+                          `- ${document.getElementById('kpiTitle3').textContent}: ${document.getElementById('kpiValue3').textContent}\n\n` +
+                          `Gerado via Central de Controle Industrial - Bioenergética Aroeira.`);
+            
+            window.location.href = `mailto:diretoria@bioaroeira.com.br?subject=${assunto}&body=${corpo}`;
+            
+            mostrarToastFeedback("Outlook Acionado!");
+            adicionarLogAuditoria('Outlook', 'Disparo de E-mail', `E-mail executivo preparado via cliente de correio (${setorAtual}).`);
+        }
+
+        function executarSimulacaoAvancada() {
+            const horaStr = new Date().toLocaleTimeString('pt-BR', {timeZone: 'America/Sao_Paulo'});
+            let cenarioSorteado;
+
+            // ISOLAMENTO RIGOROSO POR SETOR: Garante que cada setor só simule dados da sua respectiva categoria
+            if(setorAtual === 'balanca') {
+                cenarioSorteado = {
+                    kpi1Val: "5.120.4 t", kpi2Val: "97.5%", kpi3Val: "144.1 kg/t",
+                    linha: { col1: horaStr, col2: 'Frota Lote 88', col3: '52.400 kg', col4: '16.800 kg', col5: '35.600 kg', col6: 'Pátio Central', col7: 'Fila Elevada' }
+                };
+            } else if(setorAtual === 'moenda') {
+                cenarioSorteado = {
+                    kpi1Val: "585 t/h", kpi2Val: "97.9%", kpi3Val: "47.2%",
+                    linha: { col1: horaStr, col2: 'Moenda Principal', col3: '585 t/h', col4: '97.9% Ext.', col5: '47.2% Umidade', col6: 'Frente Norte', col7: 'Alta Performance' }
+                };
+            } else if(setorAtual === 'caldeira') {
+                cenarioSorteado = {
+                    kpi1Val: "22.5 bar", kpi2Val: "185 t/h", kpi3Val: "42.1 MW",
+                    linha: { col1: horaStr, col2: 'Caldeira 01', col3: '22.4 bar', col4: '92 t/h', col5: '21.1 MW', col6: 'Utilidades', col7: 'Estável' }
+                };
+            } else {
+                cenarioSorteado = {
+                    kpi1Val: "143.2 kg/t", kpi2Val: "17.1%", kpi3Val: "89.0%",
+                    linha: { col1: horaStr, col2: 'Lote 305', col3: '143.2 kg/t', col4: '17.1%', col5: '89.0%', col6: 'PCTS Lab', col7: 'Aprovado' }
+                };
+            }
+
+            document.getElementById('kpiValue1').textContent = cenarioSorteado.kpi1Val;
+            document.getElementById('kpiValue2').textContent = cenarioSorteado.kpi2Val;
+            document.getElementById('kpiValue3').textContent = cenarioSorteado.kpi3Val;
+
+            if(!modoDiaAnterior) {
+                dadosPorSetor[setorAtual].unshift(cenarioSorteado.linha);
+                renderizarTabela(dadosPorSetor[setorAtual], false);
+            }
+
+            adicionarLogAuditoria('Simulador Solinftec', 'Cenário Aplicado', `Cenário executado estritamente para o setor ${setorAtual}`);
+        }
+
+        function registrarDadoExecutivo() {
+            const inputCol1El = document.getElementById('inputCol1');
+            const inputCol2El = document.getElementById('inputCol2');
+            const alertBox = document.getElementById('formAlertBox');
+
+            const val1Raw = inputCol1El.value.trim();
+            const val2Raw = inputCol2El.value.trim();
+
+            if (val1Raw === "" || val2Raw === "") {
+                alertBox.className = "alert alert-warning mb-3";
+                alertBox.textContent = "⚠️ Atenção: Por favor, preencha todos os campos obrigatórios corretamente antes de lançar na tabela.";
+                alertBox.style.display = "flex";
+                setTimeout(() => { alertBox.style.display = "none"; }, 4000);
+                return;
+            }
+
+            const numCleanStr = val1Raw.replace(/\./g, '').replace(',', '.');
+            const numeroValidado = parseFloat(numCleanStr);
+
+            if (isNaN(numeroValidado) || numeroValidado <= 0) {
+                alertBox.className = "alert alert-warning mb-3";
+                alertBox.textContent = "⚠️ Atenção: O valor principal (Métrica) deve ser um número válido maior do que zero.";
+                alertBox.style.display = "flex";
+                inputCol1El.focus();
+                setTimeout(() => { alertBox.style.display = "none"; }, 4000);
+                return;
+            }
+
+            const val1Seguro = escaparHTML(val1Raw);
+            const val2Seguro = escaparHTML(val2Raw);
+
+            alertBox.className = "alert alert-success mb-3";
+            alertBox.textContent = "✅ Lançamento Concluído com sucesso!";
+            alertBox.style.display = "flex";
+
+            const setorSelect = document.getElementById('selectSetorOrigem').value;
+            const agoraStr = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'medium' });
+
+            const novoRegistro = {
+                col1: agoraStr,
+                col2: escaparHTML(setorSelect),
+                col3: val1Seguro,
+                col4: val2Seguro,
+                col5: 'Automático',
+                col6: 'Central CCI',
+                col7: 'Registrado'
+            };
+
+            // Mapeamento exato para o vetor do setor correto
+            let chaveAlvo = 'balanca';
+            const setorLower = setorSelect.toLowerCase();
+            if(setorLower.includes('moenda')) chaveAlvo = 'moenda';
+            else if(setorLower.includes('caldeira')) chaveAlvo = 'caldeira';
+            else if(setorLower.includes('laboratório') || setorLower.includes('laboratorio')) chaveAlvo = 'laboratorio';
+
+            dadosPorSetor[chaveAlvo].unshift(novoRegistro);
+
+            if(!modoDiaAnterior && setorAtual === chaveAlvo) {
+                renderizarTabela(dadosPorSetor[setorAtual], false);
+            }
+
+            adicionarLogAuditoria('Operador CCI', 'Lançamento Manual', `Setor: ${setorSelect} | Métrica: ${val1Seguro}`);
+
+            inputCol1El.value = "";
+            inputCol2El.value = "";
+
+            setTimeout(() => { alertBox.style.display = "none"; }, 3000);
+        }
+
+        function iniciarAtualizacaoIndependenteNumerica() {
+            const timer = setInterval(() => {
+                let datasetAtual = dadosPorSetor[setorAtual];
+                if (!datasetAtual || datasetAtual.length === 0 || modoDiaAnterior) return;
+                const rowIndex = Math.floor(Math.random() * datasetAtual.length);
+                const targetCol = Math.random() > 0.5 ? 'c3' : 'c4';
+                const cellElement = document.getElementById(`cell-r${rowIndex}-${targetCol}`);
+                
+                if (cellElement) {
+                    let textoAtual = cellElement.textContent;
+                    let numMatch = textoAtual.match(/[\d.,]+/);
+                    if (numMatch) {
+                        let numStr = numMatch[0].replace(/\./g, '').replace(',', '.');
+                        let num = parseFloat(numStr);
+                        if (!isNaN(num)) {
+                            let variacao = (Math.random() * 2 - 1) * (num * 0.01);
+                            let novoNum = num + variacao;
+                            let sufixo = textoAtual.replace(numMatch[0], '');
+                            let formatado = novoNum > 1000 ? Math.round(novoNum).toLocaleString('pt-BR') : novoNum.toFixed(1);
+                            cellElement.textContent = formatado + sufixo;
+                            
+                            cellElement.style.backgroundColor = '#d1fae5';
+                            setTimeout(() => { cellElement.style.backgroundColor = ''; }, 500);
+                        }
                     }
                 }
-            }
-        }, 3000);
-        temporizadoresCelulas.push(timer);
-    }
-
-    function mostrarGraficoSetorial(kpiId) {
-        const box = document.getElementById('chartBox');
-        box.style.display = 'block';
-        adicionarLogAuditoria('Operador CCI', 'Visualização Gráfica', `Abriu o gráfico detalhado para o KPI ID: ${kpiId}`);
-    }
-
-    function fecharGrafico() {
-        const box = document.getElementById('chartBox');
-        if (box) box.style.display = 'none';
-    }
-
-    function dispararRelatorioEmail(btn) {
-        const toast = btn.nextElementSibling;
-        if(toast) {
-            toast.style.display = 'block';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 2500);
+            }, 3000);
+            temporizadoresCelulas.push(timer);
         }
-        adicionarLogAuditoria('Gestão', 'Disparo de Relatório', 'Relatório executivo enviado por e-mail com sucesso.');
-    }
+
+        function mostrarGraficoSetorial(kpiId) {
+            const box = document.getElementById('chartBox');
+            if (box) box.style.display = 'block';
+            adicionarLogAuditoria('Operador CCI', 'Visualização Gráfica', `Abriu o gráfico detalhado para o KPI ID: ${kpiId}`);
+        }
+
+        function fecharGrafico() {
+            const box = document.getElementById('chartBox');
+            if (box) box.style.display = 'none';
+        }
+
+        // Inicialização padrão
+        renderizarTabela(dadosPorSetor['balanca'], false);
+        iniciarAtualizacaoIndependenteNumerica();
+        iniciarAtualizacaoKpisTempoReal();
+    </script>
+</body>
+</html>
