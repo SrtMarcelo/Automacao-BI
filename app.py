@@ -10,6 +10,12 @@ from flask_limiter.util import get_remote_address
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Instancia o Limiter de forma global/extensão sem injetar o app diretamente aqui
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["100 per day", "20 per hour"],
+    storage_uri="memory://",
+)
 
 def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     """Fábrica de aplicação para o Flask."""
@@ -23,12 +29,11 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     if test_config:
         app.config.update(test_config)
 
-    limiter = Limiter(
-        get_remote_address,
-        app=app,
-        default_limits=["100 per day", "20 per hour"],
-        storage_uri="memory://",
-    )
+    # Inicializa o limiter com a aplicação usando o padrão correto de extensão
+    limiter.init_app(app)
+    
+    # Atualiza o estado de ativação com base na configuração atual do app
+    limiter.enabled = app.config.get("RATELIMIT_ENABLED", True)
 
     @app.route("/")
     @limiter.limit("5 per minute")
@@ -61,3 +66,6 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
 
 app = create_app()
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=False)
