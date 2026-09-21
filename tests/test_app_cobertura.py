@@ -17,15 +17,24 @@ def test_app_factory_e_rotas() -> None:
     # 1º chamada: lança a exceção para cair no bloco except
     # 2º chamada: retorna um objeto mockado com sucesso para o jsonify do except montar o status 500
     mock_response_erro = MagicMock()
-    
-    with patch("app.jsonify", side_effect=[Exception("Erro simulado no jsonify"), mock_response_erro]):
+
+    with patch(
+        "app.jsonify",
+        side_effect=[Exception("Erro simulado no jsonify"), mock_response_erro],
+    ):
         response = client.get("/")
         assert response.status_code == 500
 
-    with patch("app.jsonify", side_effect=[Exception("Erro simulado no health"), mock_response_erro]):
+    with patch(
+        "app.jsonify",
+        side_effect=[Exception("Erro simulado no health"), mock_response_erro],
+    ):
         response = client.get("/health")
         assert response.status_code == 500
 
-    with patch("app.jsonify", side_effect=[Exception("Erro simulado nos slides"), mock_response_erro]):
+    with patch(
+        "app.jsonify",
+        side_effect=[Exception("Erro simulado nos slides"), mock_response_erro],
+    ):
         response = client.get("/gerar-slides-turno")
         assert response.status_code == 500

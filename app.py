@@ -17,6 +17,7 @@ limiter = Limiter(
     storage_uri="memory://",
 )
 
+
 def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     """Fábrica de aplicação para o Flask."""
     app = Flask(__name__)
@@ -31,7 +32,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     # Inicializa o limiter com a aplicação usando o padrão correto de extensão
     limiter.init_app(app)
-    
+
     # Atualiza o estado de ativação com base na configuração atual do app
     limiter.enabled = app.config.get("RATELIMIT_ENABLED", True)
 

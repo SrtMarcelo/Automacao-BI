@@ -15,11 +15,13 @@ import requests
 
 def test_app_rotas_sucesso_completo() -> None:
     """Valida o funcionamento ideal de todas as rotas do Flask."""
-    flask_app = app.create_app({
-        "RATELIMIT_ENABLED": False, 
-        "TESTING": True,
-        "RATELIMIT_STORAGE_URL": "memory://"
-    })
+    flask_app = app.create_app(
+        {
+            "RATELIMIT_ENABLED": False,
+            "TESTING": True,
+            "RATELIMIT_STORAGE_URL": "memory://",
+        }
+    )
     client = flask_app.test_client()
 
     assert client.get("/").status_code == 200
@@ -29,11 +31,13 @@ def test_app_rotas_sucesso_completo() -> None:
 
 def test_app_tratamento_excecoes_rotas() -> None:
     """Simula falhas internas nas rotas para atingir os blocos except de app.py."""
-    flask_app = app.create_app({
-        "RATELIMIT_ENABLED": False, 
-        "TESTING": True,
-        "RATELIMIT_STORAGE_URL": "memory://"
-    })
+    flask_app = app.create_app(
+        {
+            "RATELIMIT_ENABLED": False,
+            "TESTING": True,
+            "RATELIMIT_STORAGE_URL": "memory://",
+        }
+    )
     with flask_app.test_request_context("/"):
         assert flask_app.name is not None
 

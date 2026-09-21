@@ -1,0 +1,31 @@
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+exclude = [
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    "alembic/versions",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = [
+    "E501",
+    "DTZ005",
+    "LOG015",
+    "BLE001",
+    "G201",
+    "PLR1722",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
