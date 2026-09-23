@@ -1,10 +1,11 @@
-import os
 import logging
+import os
+import smtplib
 import time
 import uuid
-import smtplib
 from email.message import EmailMessage
 from logging.handlers import RotatingFileHandler
+
 import pandas as pd
 
 # 1. Configuração de Logging de Nível Industrial Sênior
@@ -31,6 +32,8 @@ caminho_1 = os.path.join(DIRETORIO_SCRIPT, "relatorio_automatico.xlsx.xls")
 caminho_2 = os.path.join(DIRETORIO_SCRIPT, "relatorio_automatico.xlsx")
 
 CAMINHO_PLANILHA = caminho_1 if os.path.exists(caminho_1) else caminho_2
+
+
 def enviar_relatorio():
     execucao_id = uuid.uuid4().hex[:8]
     inicio_execucao = time.perf_counter()
@@ -41,9 +44,11 @@ def enviar_relatorio():
     # PASSO 3: Medir leitura da planilha
     try:
         inicio_leitura = time.perf_counter()
-        df = pd.read_csv(CAMINHO_PLANILHA, sep=None, engine="python", encoding="utf-8-sig")
+        df = pd.read_csv(
+            CAMINHO_PLANILHA, sep=None, engine="python", encoding="utf-8-sig"
+        )
         tempo_leitura = time.perf_counter() - inicio_leitura
-        
+
         logger.info(
             f"[{execucao_id}] "
             f"Leitura concluída "
@@ -91,18 +96,14 @@ Sistema Automático de BI - Jotta Store
     try:
         logger.info(f"[{execucao_id}] 🚀 Conectando ao servidor SMTP do Gmail...")
         inicio_envio = time.perf_counter()
-        
+
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(remetente, senha_app)
             smtp.send_message(msg)
 
         tempo_envio = time.perf_counter() - inicio_envio
-        
-        logger.info(
-            f"[{execucao_id}] "
-            f"E-mail enviado "
-            f"Tempo={tempo_envio:.2f}s"
-        )
+
+        logger.info(f"[{execucao_id}] " f"E-mail enviado " f"Tempo={tempo_envio:.2f}s")
 
     except Exception:
         logger.exception(f"[{execucao_id}] ❌ Erro durante o envio e-mail")

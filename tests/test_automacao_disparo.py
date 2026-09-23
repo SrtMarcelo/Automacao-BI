@@ -27,6 +27,7 @@ def test_automacao_enviar_relatorio(mock_smtp) -> None:
                 enviar_relatorio()
                 mock_smtp.assert_called_once()
 
+
 @patch("smtplib.SMTP_SSL")
 def test_disparo_automatico_direto(mock_smtp) -> None:
     """Testa o disparo automático direto de relatórios."""
