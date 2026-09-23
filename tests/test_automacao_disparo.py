@@ -21,12 +21,11 @@ def test_automacao_enviar_relatorio(mock_smtp) -> None:
         }
     )
 
-    with patch("pandas.read_excel", return_value=df_mock):
+    with patch("pandas.read_csv", return_value=df_mock):
         with patch("os.path.exists", return_value=True):
             with patch("builtins.open", mock_open(read_data=b"excel_data")):
                 enviar_relatorio()
                 mock_smtp.assert_called_once()
-
 
 @patch("smtplib.SMTP_SSL")
 def test_disparo_automatico_direto(mock_smtp) -> None:
