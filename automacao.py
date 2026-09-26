@@ -66,7 +66,9 @@ def enviar_relatorio():
     senha_app = (os.getenv("EMAIL_PASSWORD") or "").strip()
 
     if not all([remetente, destinatario, senha_app]):
-        logger.error(f"[{execucao_id}] Configuracao de e-mail incompleta no ambiente (.env)")
+        logger.error(
+            f"[{execucao_id}] Configuracao de e-mail incompleta no ambiente (.env)"
+        )
         return
 
     msg = EmailMessage()
