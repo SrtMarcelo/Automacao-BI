@@ -5,10 +5,11 @@ import time
 import uuid
 from email.message import EmailMessage
 from logging.handlers import RotatingFileHandler
+
+import pandas as pd
 from dotenv import load_dotenv
 
 load_dotenv()
-import pandas as pd
 
 # 1. Configuração de Logging de Nível Industrial Sênior
 os.makedirs("logs", exist_ok=True)
