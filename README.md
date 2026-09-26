@@ -1,4 +1,3 @@
-# Sistema de BI e Automação de Relatórios 
 
 [![Pipeline de CI - SAP BI](https://github.com/SrtMarcelo/Automacao-BI/actions/workflows/ci.yml/badge.svg)](https://github.com/SrtMarcelo/Automacao-BI/actions)
 [![Coverage Status](https://img.shields.io/badge/coverage-%3E90%25-brightgreen.svg)](https://github.com/SrtMarcelo/Automacao-BI/actions)
@@ -6,26 +5,29 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-Pipeline de dados automatizado em Python voltado para a extração, tratamento, monitoramento em tempo real de indicadores comerciais e operacionais (KPIs) e integração corporativa. O projeto possui arquitetura validada por suítes de testes automatizados e processamento de CI/CD contínuo.
+# Sistema de BI e Automação de Relatórios
 
-🏛️ Visão Geral da Arquitetura
-O ecossistema foi projetado sob padrões rigorosos de engenharia de software para garantir robustez, consistência e rastreabilidade absoluta dos dados:
+Pipeline de dados em Python para extração, tratamento e automação de relatórios 
+de indicadores comerciais e operacionais (KPIs), com simulação de integração 
+corporativa (SAP). Projeto pessoal desenvolvido para aplicar práticas de 
+engenharia de dados a um contexto industrial real.
 
-Camada de Extração & Persistência: Conexão segura e estruturada com bancos de dados relacionais via SQLAlchemy e manipulação de alta performance com Pandas.
+## 🏛️ Visão Geral da Arquitetura
 
-Automação de Disparos: Módulo integrado para processamento e envio programado/seguro de relatórios executivos gerenciais.
+- **Extração & Persistência**: conexão estruturada com bancos relacionais via 
+  SQLAlchemy, manipulação de dados com Pandas.
+- **Automação de Disparos**: envio programado de relatórios executivos por e-mail.
+- **Garantia de Qualidade**: padronização de código (Black, Ruff) e cobertura 
+  de testes automatizados (Pytest) validada em pipeline.
+- **CI/CD**: GitHub Actions executando linting, testes, cobertura e 
+  verificação de segredos expostos a cada alteração.
 
-Garantia de Qualidade: Padronização estrita de código (Black e Ruff) e alta cobertura de testes unitários automatizados (Pytest) com padrão estrito assegurado em pipeline.
+## 🛠️ Pilha Tecnológica
 
-CI/CD Integrado: Esteira de integração contínua (GitHub Actions) que executa linting, testes e auditorias de cobertura a cada alteração no repositório.
+- **Linguagem**: Python 3.11+
+- **Dados**: Pandas, SQLAlchemy, MySQL
+- **Qualidade**: Pytest, Pytest-Cov, Black, Ruff
+- **CI/CD**: GitHub Actions
 
-🛠️ Pilha Tecnológica
-Linguagem: Python 3.11+
-
-Engenharia & Bancos de Dados: Pandas, SQLAlchemy, MySQL
-
-Qualidade e Testes: Pytest, Pytest-Cov, Black, Ruff
-
-Infraestrutura CI/CD: GitHub Actions
-
-© Desenvolvido por Marcelo Ferreira De Jesus. Todos os direitos reservados.
+---
+Desenvolvido por Marcelo Ferreira De Jesus.
