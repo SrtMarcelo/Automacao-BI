@@ -13,3 +13,4 @@ config.py
 # Dependências e Ambiente Virtual
 .venv/
 __pycache__/    
+senha gmail.txt
