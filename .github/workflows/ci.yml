@@ -24,13 +24,24 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install --no-cache-dir -r requirements.txt
-          pip install ruff black pytest pytest-cov
+          pip install ruff black pytest pytest-cov detect-secrets
 
       - name: Executar Linting e Code Style (Quality Gate)
         run: |
           black --check .
           ruff check .
 
+      # NOVO: bloqueia o pipeline se houver credencial nova não registrada no baseline
+      - name: Verificar Segredos Expostos
+        run: |
+          detect-secrets scan --baseline .secrets.baseline
+
       - name: Executar Testes Automatizados e Verificar Cobertura
+        env:
+          # NOVO: injeta os segredos reais como variáveis de ambiente durante os testes
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_DESTINATARIO: ${{ secrets.EMAIL_DESTINATARIO }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           pytest -v --cov=. --cov-report=term-missing --cov-fail-under=85 -o pythonpath="."

@@ -5,7 +5,9 @@ import time
 import uuid
 from email.message import EmailMessage
 from logging.handlers import RotatingFileHandler
+from dotenv import load_dotenv
 
+load_dotenv()
 import pandas as pd
 
 # 1. Configuração de Logging de Nível Industrial Sênior
@@ -59,9 +61,13 @@ def enviar_relatorio():
         logger.exception(f"[{execucao_id}] ❌ Erro crítico ao ler a planilha Excel")
         return
 
-    remetente = os.getenv("EMAIL_USER", "mekanics153@gmail.com")
-    destinatario = os.getenv("EMAIL_DESTINATARIO", "mekanics153@gmail.com")
-    senha_app = os.getenv("EMAIL_PASSWORD", "rfvpmoeolsqelzjo")
+    remetente = (os.getenv("EMAIL_USER") or "mekanics153@gmail.com").strip()
+    destinatario = (os.getenv("EMAIL_DESTINATARIO") or "mekanics153@gmail.com").strip()
+    senha_app = (os.getenv("EMAIL_PASSWORD") or "").strip()
+
+    if not all([remetente, destinatario, senha_app]):
+        logger.error(f"[{execucao_id}] Configuracao de e-mail incompleta no ambiente (.env)")
+        return
 
     msg = EmailMessage()
     msg["Subject"] = "📊 Relatório Automático Da Loja - Jotta Store"
